@@ -618,16 +618,35 @@ Reserved Notation "x 'o' y" (at level 69).
 Class Setoid (A: UU): UU :=
    mkSetoid
    {
-      et         :  A -> A -> UU where "a ~* b" := (et a b);
+      et         :  relation A where "a ~* b" := (et a b);
+      eqv        :  ∏ x: A, x ~* x;
+      star       :  ∏ {x y z: A}, x ~* y -> y ~* z -> x ~* z where "a 'o' b" := (star a b);
+      inv        :  ∏ {x y: A}, x ~* y -> y ~* x;
    }.
 
 Arguments et {_ _} _ _.
+Arguments eqv {_ _} _.
+Arguments star {_ _ _ _ _} _ _.
+Notation "x 'o' y"   := (star x y): type_scope.
 Notation "x '~*' y"  := (et x y) : type_scope.
+
+Instance EqRel_et: ∏ {A} {S: Setoid A}, Equivalence (@et A S).
+  constructor; intro.
+        apply eqv.
+        apply (@inv A).
+        apply (@star A).
+Defined.
 
 Definition dirprodSetoid {A B: UU} (SA: Setoid A) (SB: Setoid B): Setoid (dirprod A B).
 Proof. unshelve econstructor.
        - intros a b.
          exact (dirprod (@et A SA (pr1 a) (pr1 b)) (@et B SB (pr2 a) (pr2 b))).
+       - cbn. intro z. 
+         exact ({ eqv(pr1 z) ; eqv(pr2 z) }).
+       - cbn. intros z w u (e1, e2) (d1, d2).
+         exact ({ (e1 o d1) ; (e2 o d2) }).
+       - cbn. intros z w (e1, e2).
+         exact ({ (inv e1) ; (inv e2) }).
 Defined.
 
 Proposition p11T: ∏ {A B: UU} (SA: Setoid A) (SB: Setoid B),
@@ -643,11 +662,8 @@ Proof. cbn. intros A B SA SB z w (e1, e2). split; easy. Defined.
 Class Typoid (A: UU): UU :=
    mkTypoid
    {
-      st         : Setoid A;
-      eqv        :  ∏ x: A, x ~* x;
-      star       :  ∏ {x y z: A}, x ~* y -> y ~* z -> x ~* z where "a 'o' b" := (star a b);
-      inv        :  ∏ {x y: A}, x ~* y -> y ~* x; 
-      ett        :  ∏ {x y: A}, relation (et x y) where "a ~== b" := (ett a b);
+      st         :  Setoid A;
+      ett        :  ∏ {x y: A}, relation (@et A st x y) where "a ~== b" := (ett a b);
       ett_refl   :  ∏ {x y: A} (e: x ~* y), e ~== e;
       ett_sym    :  ∏ {x y: A} (e d: x ~* y), e ~== d -> d ~== e;
       ett_trans  :  ∏ {x y: A} (e d f: x ~* y), e ~== d -> d ~== f -> e ~== f;
@@ -659,21 +675,10 @@ Class Typoid (A: UU): UU :=
       Typ4       :  ∏ {x y z: A} (e1 d1: x ~* y) (e2 d2: y ~* z), e1 ~== d1 -> e2 ~== d2 -> (e1 o e2) ~== (d1 o d2);
       SP         :> ∏ {x y z: A}, Proper (@ett x y ==> @ett y z ==> @ett x z) (star);
       EP         :> ∏ {x: A}, Proper (@ett x x) (eqv x);
-      IP         :> ∏ {x y: A}, Proper (@ett x y ==> @ett y x) (inv);
-      RET        :> ∏ {x y}, relation (@et A st x y);
+      IP         :> ∏ {x y: A}, Proper (@ett x y ==> @ett y x) (inv)
    }.
 
-Arguments eqv {_ _} _.
-Arguments star {_ _ _ _ _} _ _.
-Notation "x 'o' y"   := (star x y): type_scope.
 Notation "x '~==' y" := (ett x y) : type_scope.
-
-Instance EqRel_et: ∏ {A T}, Equivalence (@et A (@st A T)).
-  constructor; intro.
-        apply eqv.
-        apply (@inv A).
-        apply (@star A).
-Defined.
 
 Instance EqRel_ett: ∏ {A T} x y, Equivalence (@ett A T x y).
   constructor; intro.
@@ -685,7 +690,8 @@ Defined.
 Proposition p11_pr1: ∏ {A B: UU} (TA: Typoid A) (TB: Typoid B),
    ∏ (z w: dirprod A B) (e1: (@et A (@st A TA) (pr1 z) (pr1 w))) (e2: @et B (@st B TB) (pr2 z) (pr2 w)), 
     (@ett A TA _ _  (pr1 ( (p11G (@st A TA) (@st B TB) z w (p11T (@st A TA) (@st B TB) z w {e1; e2})))) e1).
-Proof. cbn. intros A B TA TB z w e1 e2. easy. Defined.
+Proof. cbn. intros A B TA TB z w e1 e2.
+       easy. Defined.
 
 Proposition p11_pr2: ∏ {A B: UU} (TA: Typoid A) (TB: Typoid B),
    ∏ (z w: dirprod A B) (e1: (@et A (@st A TA) (pr1 z) (pr1 w))) (e2: @et B (@st B TB) (pr2 z) (pr2 w)), 
@@ -696,12 +702,6 @@ Proposition h13: ∏ {A B: UU} (TA: Typoid A) (TB: Typoid B), Typoid (dirprod A 
 Proof. intros.
        unshelve econstructor.
        - exact (dirprodSetoid (@st A TA) (@st B TB)).
-       - cbn. intro z. 
-         exact (@p11T _ _ _ _ z z { eqv(pr1 z) ; eqv(pr2 z) }).
-       - cbn. intros z w u (e1, e2) (d1, d2).
-         exact (@p11T _ _ _ _ z u { (e1 o d1) ; (e2 o d2) }).
-       - cbn. intros z w (e1, e2).
-         exact (@p11T _ _ _ _ w z { (inv e1) ; (inv e2) }).
        - unfold relation. cbn. intros z w (e1, e2) (e1', e2').
          exact (dirprod (e1 ~== e1') (e2 ~== e2')).
        - cbn. intros. destruct e.
@@ -710,7 +710,7 @@ Proof. intros.
          destruct H. split. now rewrite pr7. now rewrite pr8.
        - cbn. intros. destruct e, d, f, H, H0.
          split. now rewrite pr9, pr11. now rewrite pr10, pr12.
-       - cbn. intros. destruct e. cbn in *.
+       - cbn. intros. destruct e.
          split; now rewrite Typ1_i.
        - cbn. intros. destruct e. cbn in *.
          split; now rewrite Typ1_ii.
@@ -727,18 +727,16 @@ Proof. intros.
        - cbn. repeat intro. easy.
        - cbn. repeat intro. destruct x0, y0, H. cbn in *.
          split. now rewrite pr7. now rewrite pr8.
-       - cbn. repeat intro. 
-         exact (X = X0).
 Defined.
 
 Definition e3 A: Typoid A.
 Proof. unshelve econstructor.
         - unshelve econstructor.
-         + exact Id.
-        - intro x. exact (refl x).
-        - intros x y z p q.
-          exact (concat p q).
-        - intros x y p.
+          + exact Id.
+          + intro x. exact (refl x).
+          + intros x y z p q.
+            exact (concat p q).
+          + intros x y p.
           exact (inverse p).
         - intros x y.
           exact (fun e e': Id x y => Id e e').
@@ -754,9 +752,6 @@ Proof. unshelve econstructor.
         - repeat intro. cbn. now induction X, X0.
         - repeat intro. now cbn.
         - repeat intro. cbn. now induction X.
-        - intros x y. unfold relation.
-          intros H H0.
-          exact (H = H0).
 Defined.
 
 Definition e4 (A B: UU): Typoid (A -> B).
@@ -764,12 +759,12 @@ Proof. unshelve econstructor.
        - unshelve econstructor.
          + intros f g.
            exact (∏x: A, Id (f x) (g x)). 
-       - intro f. cbn.
-         exact (fun x: A => refl (f x)).
-       - cbn. intros f g h H G.
-         exact (fun x => concat (H x) (G x)).
-       - cbn. intros f g H.
-         exact (fun x => inverse (H x)).
+         + intro f. cbn.
+           exact (fun x: A => refl (f x)).
+         + cbn. intros f g h H G.
+           exact (fun x => concat (H x) (G x)).
+         + cbn. intros f g H.
+           exact (fun x => inverse (H x)).
        - intros f g H H'. cbn in *.
          exact (∏x: A, Id (H x) (H' x)).
        - cbn. intros. easy.
@@ -792,7 +787,6 @@ Proof. unshelve econstructor.
         - repeat intro. cbn. now induction (X x2), (X0 x2).
         - repeat intro. now cbn.
         - repeat intro. cbn. now induction (X x1).
-        - repeat intro. exact (X = X0).
 Defined.
 
 Example e5_isequiv: Typoid (UU).
@@ -800,43 +794,43 @@ Proof. unshelve econstructor.
        - unshelve econstructor. 
          + intros A B.
            exact (∑ f: A -> B, isequiv f).
-       - intros. cbn.
-         exists id. apply h249_i.
-         unshelve econstructor.
-         * exact id.
-         * easy.
-       - cbn. intros.
-          destruct X as (f, cc1).
-          destruct X0 as (g, cc2).
-          apply h249_ii in cc1.
-          apply h249_ii in cc2.
-          destruct cc1 as (invf, (cc1a, cc1b)).
-          destruct cc2 as (invg, (cc2a, cc2b)).
-          unfold compose, homotopy, id in *. cbn.
-          exists (compose f g).
-          apply h249_i.
-          unshelve econstructor.
-          exact (compose invg invf).
-          split.
-          + unfold compose, homotopy, id in *. cbn.
-            intro c.
-            specialize (cc1a (invg c)).
-            apply Id_eql in cc1a. rewrite cc1a.
-            easy.
-          + unfold compose, homotopy, id in *. cbn.
-            intro a.
-            specialize (cc2b (f a)).
-            apply Id_eql in cc2b. rewrite cc2b.
-            easy.
-       - cbn. intros.
-         destruct X as (f, cc1).
-         apply h249_ii in cc1.
-         destruct cc1 as (invf, (cc1, cc2)).
-         exists invf.
-         apply h249_i.
-         unshelve econstructor.
-         ++ exact f.
-         ++ split; easy.
+         + intros. cbn.
+           exists id. apply h249_i.
+           unshelve econstructor.
+           * exact id.
+           * easy.
+         + cbn. intros.
+           destruct X as (f, cc1).
+           destruct X0 as (g, cc2).
+           apply h249_ii in cc1.
+           apply h249_ii in cc2.
+           destruct cc1 as (invf, (cc1a, cc1b)).
+           destruct cc2 as (invg, (cc2a, cc2b)).
+           unfold compose, homotopy, id in *. cbn.
+           exists (compose f g).
+           apply h249_i.
+           unshelve econstructor.
+           exact (compose invg invf).
+           split.
+           ++ unfold compose, homotopy, id in *. cbn.
+              intro c.
+              specialize (cc1a (invg c)).
+              apply Id_eql in cc1a. rewrite cc1a.
+              easy.
+           ++ unfold compose, homotopy, id in *. cbn.
+              intro a.
+              specialize (cc2b (f a)).
+              apply Id_eql in cc2b. rewrite cc2b.
+              easy.
+         + cbn. intros.
+           destruct X as (f, cc1).
+           apply h249_ii in cc1.
+           destruct cc1 as (invf, (cc1, cc2)).
+           exists invf.
+           apply h249_i.
+           unshelve econstructor.
+           ++ exact f.
+           ++ split; easy.
        - cbn. intros A B (f, u) (f', u').
          exact (∏x: A, Id (f x) (f' x)).
        - cbn. intros. now destruct e.
@@ -896,19 +890,17 @@ Proof. unshelve econstructor.
          unfold homotopy, compose, id in *.
          intro b.
          pose proof H as HH.
-         specialize (pr12 (pr7 (pr3 (pr10 b)))).
-         specialize (pr9 (pr10 b)).
-         apply Id_eql in pr9.
-         rewrite pr9 in pr12 at 1.
-         specialize (pr11 b).
-         apply Id_eql in pr11.
-         rewrite pr11 in pr12.
-         specialize (H (pr10 b)).
+         specialize (pr20 (pr15 (pr5 (pr17 b)))).
+         specialize (pr18 b).
+         apply Id_eql in pr18.
+         rewrite pr18 in pr20.
+         specialize (H (pr15 b)).
          apply Id_eql in H.
-         rewrite H, pr11 in pr12.
-         now apply inverse in pr12.
-       - repeat intro. cbn in *.
-         exact (X = X0).
+         rewrite <- H in pr20.
+         specialize (pr16 b).
+         apply Id_eql in pr16.
+         rewrite pr16 in pr20.
+         exact (inverse pr20).
 Defined.
 
 Example e5_ishae: Typoid (UU).
@@ -916,43 +908,43 @@ Proof. unshelve econstructor.
        - unshelve econstructor.
          + intros A B.
            exact (∑ f: A -> B, ishae f).
-       - intros. cbn.
-         exists id. apply isequiv_ishae, h249_i.
-         unshelve econstructor.
-         * exact id.
-         * easy.
-       - cbn. intros.
-          destruct X as (f, cc1).
-          destruct X0 as (g, cc2).
-          apply ishae_isequiv, h249_ii in cc1.
-          apply ishae_isequiv, h249_ii in cc2.
-          destruct cc1 as (invf, (cc1a, cc1b)).
-          destruct cc2 as (invg, (cc2a, cc2b)).
-          unfold compose, homotopy, id in *. cbn.
-          exists (compose f g).
-          apply isequiv_ishae, h249_i.
-          unshelve econstructor.
-          exact (compose invg invf).
-          split.
-          + unfold compose, homotopy, id in *. cbn.
-            intro c.
-            specialize (cc1a (invg c)).
-            apply Id_eql in cc1a. rewrite cc1a.
-            easy.
-          + unfold compose, homotopy, id in *. cbn.
-            intro a.
-            specialize (cc2b (f a)).
-            apply Id_eql in cc2b. rewrite cc2b.
-            easy.
-       - cbn. intros.
-         destruct X as (f, cc1).
-         apply ishae_isequiv, h249_ii in cc1.
-         destruct cc1 as (invf, (cc1, cc2)).
-         exists invf.
-         apply isequiv_ishae, h249_i.
-         unshelve econstructor.
-         ++ exact f.
-         ++ split; easy.
+         + intros. cbn.
+           exists id. apply isequiv_ishae, h249_i.
+           unshelve econstructor.
+           * exact id.
+           * easy.
+         + cbn. intros.
+           destruct X as (f, cc1).
+           destruct X0 as (g, cc2).
+           apply ishae_isequiv, h249_ii in cc1.
+           apply ishae_isequiv, h249_ii in cc2.
+           destruct cc1 as (invf, (cc1a, cc1b)).
+           destruct cc2 as (invg, (cc2a, cc2b)).
+           unfold compose, homotopy, id in *. cbn.
+           exists (compose f g).
+           apply isequiv_ishae, h249_i.
+           unshelve econstructor.
+           exact (compose invg invf).
+           split.
+           ++ unfold compose, homotopy, id in *. cbn.
+              intro c.
+              specialize (cc1a (invg c)).
+              apply Id_eql in cc1a. rewrite cc1a.
+              easy.
+           ++ unfold compose, homotopy, id in *. cbn.
+              intro a.
+              specialize (cc2b (f a)).
+              apply Id_eql in cc2b. rewrite cc2b.
+              easy.
+         + cbn. intros.
+           destruct X as (f, cc1).
+           apply ishae_isequiv, h249_ii in cc1.
+           destruct cc1 as (invf, (cc1, cc2)).
+           exists invf.
+           apply isequiv_ishae, h249_i.
+           unshelve econstructor.
+           ++ exact f.
+           ++ split; easy.
        - cbn. intros A B (f, u) (f', u').
          exact (∏x: A, Id (f x) (f' x)).
        - cbn. intros. now destruct e.
@@ -1023,8 +1015,6 @@ Proof. unshelve econstructor.
          specialize (pr17 b).
          apply Id_eql in pr17.
          now rewrite pr17 in pr15.
-       - repeat intro. cbn in *.
-         exact (X = X0).
 Defined.
 
 Arguments et {_} _ _ _ .
@@ -1038,8 +1028,8 @@ Class TypoidFunction {A B: UU} (X: Typoid A) (Y: Typoid B): UU :=
       theta    :  ∏ (x y: A), (@et A (@st A X) x y) -> (@et B (@st B Y)  (typof x) (typof y));
       theta2nd :  ∏ (x y: A) (e d: @et A (@st A X)  x y) (i: @ett A X x y e d), (@ett B Y _ _ (theta x y e) (theta x y d));
       d6i      :  ∏ (x: A), @ett B Y _ _ (theta x x (eqv x)) (eqv (typof x));
-      d6ii     :  ∏ (x y z: A) (e1: @et A (@st A X)  x y) (e2: @et A (@st A X)  y z), @ett B Y _ _ (theta x z (@star A X  _ _ _ e1 e2)) 
-                                                                                      (@star B Y  _ _ _ (theta x y e1) (theta y z e2));
+      d6ii     :  ∏ (x y z: A) (e1: @et A (@st A X)  x y) (e2: @et A (@st A X)  y z), @ett B Y _ _ (theta x z (@star A (@st A X)  _ _ _ e1 e2)) 
+                                                                                      (@star B (@st B Y)  _ _ _ (theta x y e1) (theta y z e2));
       TP       :> ∏ {x y}, Proper (@ett A X  x y ==> @ett B Y(typof x) (typof y)) (theta x y);
    }.
 
@@ -1339,7 +1329,7 @@ Proof. intros.
         - cbn. intros z. unfold id. split; easy.
         - cbn. intros x y z e d. induction e. cbn. dependent induction d. cbn.
           split; destruct a; cbn; now rewrite Typ1_ii.
-       - cbn. repeat intro. induction X. split; easy.
+        - cbn. repeat intro. induction X. split; easy.
 Defined.
 
 Lemma h23: ∏ (A B: UU) (TA: UnivalentTypoid A) (TB: UnivalentTypoid B), 
@@ -1393,7 +1383,7 @@ Definition Typfun {A B: UU} (TA: Typoid A) (TB: Typoid B) (f: A -> B) :=
     dirprod 
     (∏ (x y z: A) (e: @et A (@st A TA) x y) (d: @et A (@st A TA) y z), 
       dirprod (@ett B TB _ _ (thef x x (eqv x)) (eqv (f x))) 
-              (@ett B TB _ _ (thef x z (@star A TA  _ _ _ e d)) (@star B TB _ _ _ (thef x y e) (thef y z d)))
+              (@ett B TB _ _ (thef x z (@star A (@st A TA)  _ _ _ e d)) (@star B (@st B TB) _ _ _ (thef x y e) (thef y z d)))
     )
     (∏ (x y: A) (e d: @et A (@st A TA) x y) (i: @ett A TA _ _ e d), 
       (@ett B TB _ _ (thef x y e) (thef x y d))
@@ -1404,22 +1394,22 @@ Proof. unshelve econstructor.
        - unshelve econstructor.
          + intros e f.
            exact (∑ f: A -> B, Typfun TA TB f).
-       - intro f. cbn in *.
-         exists (@typof A B TA TB f).
-         exists (@theta A B TA TB f).
-         split. intros. split.
-         now rewrite d6i.
-         now rewrite d6ii.
-         intros. now rewrite i.
-       - cbn. intros theta gam eta.
-         destruct theta as (f, phif, phif2, U1, U2, rt).
-         destruct gam as (g, phig, phig2, W1, W2, rg).
-         destruct eta as (h, phih, phih2, V1, V2, re). cbn in *.
-         intros e d.
-         destruct e as (gam_fg, gam2_fg). cbn in *.
-         destruct d as (gam_gh, gam2_gh). cbn in *.
-         exists f.
-         unshelve econstructor.
+         + intro f. cbn in *.
+           exists (@typof A B TA TB f).
+           exists (@theta A B TA TB f).
+           split. intros. split.
+           now rewrite d6i.
+           now rewrite d6ii.
+           intros. now rewrite i.
+         + cbn. intros theta gam eta.
+           destruct theta as (f, phif, phif2, U1, U2, rt).
+           destruct gam as (g, phig, phig2, W1, W2, rg).
+           destruct eta as (h, phih, phih2, V1, V2, re). cbn in *.
+           intros e d.
+           destruct e as (gam_fg, gam2_fg). cbn in *.
+           destruct d as (gam_gh, gam2_gh). cbn in *.
+           exists f.
+           unshelve econstructor.
 Admitted.
 
  
