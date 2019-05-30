@@ -793,34 +793,6 @@ Defined.
 
 Definition fibeq {A: Type} (P Q: A -> Type) (f: ∏x: A, (P x -> Q x)) := ∏x: A, isequiv (f x).
 
-(* Lemma h439l: ∏ {A: Type} (P Q: A -> Type) (f: ∏x: A, (P x -> Q x)),
-  (@fibeq A P Q f) -> (isequiv (@totalA A P Q f)).
-Proof. intros. 
-        specialize (λ x, @h432_i _ _  (f x)); intro H.
-        specialize (@h432_ii _ _ (totalA P Q f)); intro HH.
-        unfold fibeq.
-        assert  (H0: (∏ x : A, isequiv (f x)) -> ((∏ x : A, isContrf (f x)))).
-        { intros. apply H. easy. }
-
-        assert ((isContrf (totalA P Q f)) -> (isequiv (totalA P Q f))).
-        { intros. apply HH. easy. }
-        apply X0.
-        unfold isContrf.
-
-        intros.
-        induction y as (x0, v0).
-
-        specialize (@h436_ii (fiber (totalA P Q f) {x0; v0}) (fiber (f x0) v0)); 
-        intro HHH. apply HHH.
-        specialize (@h433 A P Q x0 v0 f); intro HHHH.
-        apply HHHH.
-
-        specialize (@h436_i (fiber (totalA P Q f) {x0; v0}) (fiber (f x0) v0));
-        intro HHHH. apply HHHH.
-        specialize (@h433 A P Q x0 v0 f); intro HHHHH. easy.
-        apply HHH. easy.  *)
-
-
 Lemma h439l: ∏ {A: Type} (P Q: A -> Type) (f: ∏x: A, (P x -> Q x)),
    ((@fibeq A P Q f) -> (isequiv (@totalA A P Q f))).
 Proof. intros. 
@@ -1474,7 +1446,7 @@ Class Typoid (A: Type): Type :=
 
 Notation "x '~==' y" := (ett x y) : type_scope.
 
-Instance EqRRel_ett: ∏ {A T} x y, RewriteRelation (@ett A T x y).
+(* Instance EqRRel_ett: ∏ {A T} x y, RewriteRelation (@ett A T x y). *)
 
 Instance EqRel_ett: ∏ {A T} x y, Equivalence (@ett A T x y).
    constructor; intro.
@@ -1483,16 +1455,11 @@ Instance EqRel_ett: ∏ {A T} x y, Equivalence (@ett A T x y).
         apply ett_trans.
 Defined.
 
-(* Lemma asd: ∏ {A: Type} (TA: Typoid A), True.
-Proof. intros.
-        destruct TA, st0.
-        assert (∏(x y: A) (e d: x ~* y), e ~== d -> e ~== d). *)
-
 Proposition p11_pr1: ∏ {A B: Type} (TA: Typoid A) (TB: Typoid B),
    ∏ (z w: dirprod A B) (e1: (@et A (@st A TA) (pr1 z) (pr1 w))) (e2: @et B (@st B TB) (pr2 z) (pr2 w)), 
     (@ett A TA _ _  (pr1 ( (p11G (@st A TA) (@st B TB) z w (p11T (@st A TA) (@st B TB) z w {e1; e2})))) e1).
 Proof. cbn. intros A B TA TB z w e1 e2.
-        apply ett_refl.
+        easy.
 Defined.
 
 Proposition p11_pr2: ∏ {A B: Type} (TA: Typoid A) (TB: Typoid B),
@@ -1534,15 +1501,11 @@ Defined.
 Definition e3 A: Typoid A.
 Proof. unshelve econstructor.
         - unshelve econstructor.
-          + exact Id.
-          + intro x. exact (refl x).
-          + intros x y z p q.
-            exact (concat p q).
-          + intros x y p.
-          exact (inverse p).
-        - intros x y. cbn. unfold relation.
-          intros e e'.
-          exact (Id e e').
+          + exact (fun x y: A => Id x y).
+          + exact (fun x => refl x).
+          + exact (fun (x y z: A) (p: Id x y) (q: Id y z) => concat p q).
+          + exact (fun (x y: A) (p: Id x y) => inverse p).
+        - exact (fun (x y: A) (e d: (@et A _ x y)) => Id e d).
         - intros. now cbn.
         - cbn. intros. exact (inverse X).
         - cbn. intros. now induction X, X0.
@@ -1830,18 +1793,18 @@ Class TypoidFunction {A B: Type} (X: Typoid A) (Y: Typoid B): Type :=
    mkTypoidFunction 
    {
       typof    :  A -> B;
-      theta    :  ∏ (x y: A), (@et A (@st A X) x y) -> (@et B (@st B Y)  (typof x) (typof y));
-      theta2nd :  ∏ (x y: A) (e d: @et A (@st A X)  x y) (i: @ett A X x y e d), (@ett B Y _ _ (theta x y e) (theta x y d));
-      d6i      :  ∏ (x: A), @ett B Y _ _ (theta x x (eqv x)) (eqv (typof x));
-      d6ii     :  ∏ (x y z: A) (e1: @et A (@st A X)  x y) (e2: @et A (@st A X)  y z), @ett B Y _ _ (theta x z (@star A (@st A X)  _ _ _ e1 e2)) 
-                                                                                      (@star B (@st B Y)  _ _ _ (theta x y e1) (theta y z e2));
-      TP       :> ∏ {x y}, CMorphisms.Proper (@CMorphisms.respectful _ _ (@ett A X  x y) (@ett B Y (typof x) (typof y))) (theta x y); 
+      phi    :  ∏ (x y: A), (@et A (@st A X) x y) -> (@et B (@st B Y)  (typof x) (typof y));
+      phi2nd :  ∏ (x y: A) (e d: @et A (@st A X)  x y) (i: @ett A X x y e d), (@ett B Y _ _ (phi x y e) (phi x y d));
+      d6i      :  ∏ (x: A), @ett B Y _ _ (phi x x (eqv x)) (eqv (typof x));
+      d6ii     :  ∏ (x y z: A) (e1: @et A (@st A X)  x y) (e2: @et A (@st A X)  y z), @ett B Y _ _ (phi x z (@star A (@st A X)  _ _ _ e1 e2)) 
+                                                                                      (@star B (@st B Y)  _ _ _ (phi x y e1) (phi y z e2));
+      TP       :> ∏ {x y}, CMorphisms.Proper (@CMorphisms.respectful _ _ (@ett A X  x y) (@ett B Y (typof x) (typof y))) (phi x y); 
    }.
 
 Notation "x '~>' y"  := (TypoidFunction x y) : type_scope.
 
-Arguments theta {_ _} _ {_ _ _ _}  _ .
-Arguments theta2nd {_ _} _ {_ _ _ _}  _ .
+Arguments phi {_ _} _ {_ _ _ _}  _ .
+Arguments phi2nd {_ _} _ {_ _ _ _}  _ .
 
 Corollary h14_pr1 {A B: Type} (TA: Typoid A) (TB: Typoid B): (h13 TA TB ~> TA).
 Proof. unshelve econstructor.
@@ -1881,15 +1844,15 @@ Corollary h16: ∏ {A B: Type} (TA: Typoid A) (TB: Typoid B) (z w: dirprod A B)
 Proof. cbn. intros. split; easy. Defined.
 
 Proposition p7 {A B: Type} (C: Typoid A) (D: Typoid B) (F: C ~> D): 
-   ∏ (x y: A) (e: x ~* y), theta C (inv e) ~== inv (theta C e). 
+   ∏ (x y: A) (e: x ~* y), phi C (inv e) ~== inv (phi C e). 
 Proof. intros.
-       assert (theta C (inv e) o (theta C e) ~== inv (theta C e) o (theta C e)).
+       assert (phi C (inv e) o (phi C e) ~== inv (phi C e) o (phi C e)).
        { setoid_rewrite Typ2_ii.
          setoid_rewrite <- d6ii.
          rewrite Typ2_ii.
          now setoid_rewrite d6i. }
-       assert (theta C (inv e) o (theta C e) o inv (theta C e) ~== 
-               inv (theta C e) o (theta C e) o inv (theta C e)).
+       assert (phi C (inv e) o (phi C e) o inv (phi C e) ~== 
+               inv (phi C e) o (phi C e) o inv (phi C e)).
        { now setoid_rewrite X. }
        now rewrite !Typ3, !Typ2_i, !Typ1_ii in X0.
 Qed.
@@ -1917,8 +1880,8 @@ Proposition p9 {A B C: Type} (X: Typoid A) (Y: Typoid B) (Z: Typoid C) (f: X ~> 
 Proof. intros.
        unshelve econstructor.
        - exact (compose (@typof A B X Y f) (@typof B C Y Z g)).
-       - intros x y e. exact (theta Y (theta X e)).
-       - intros. cbn. exact (theta2nd Y _ _ (theta2nd X e d i)).
+       - intros x y e. exact (phi Y (phi X e)).
+       - intros. cbn. exact (phi2nd Y _ _ (phi2nd X e d i)).
        - intros. cbn. unfold compose. now do 2 rewrite d6i.
        - intros. cbn. now do 2 rewrite d6ii.
        - repeat intro.
@@ -2019,7 +1982,7 @@ Proof. unshelve econstructor.
                   (@ap2 A B x y (Ua e) (Ua d) f (Ua2 i))).
        - cbn. intro a.
          specialize (@UT_ob2 A U _ _ (eqv a)); intro H.
-         assert (p: Id (ap f (@theta A A (@TT A U) (e3 A) (h18 U) a a (eqv a))) (ap f (Ua (eqv a)))).
+         assert (p: Id (ap f (@phi A A (@TT A U) (e3 A) (h18 U) a a (eqv a))) (ap f (Ua (eqv a)))).
          { now cbn. }
          induction p. dependent induction a0. now cbn.
        - cbn. intros.
@@ -2098,11 +2061,11 @@ Admitted.
 
 Proposition h20: ∏ (A B: Type) (x y: A) (p: Id x y) (TA: Typoid A) (TB: UnivalentTypoid B) (f: TA ~> (@TT B TB))
  (** why i? ― strict typoid function ― how to get that? *) 
-               (i: (@theta _ _ _ _ f x x (eqv x)) ~== (eqv (@typof A B TA (@TT B TB) f x)))
+               (i: (@phi _ _ _ _ f x x (eqv x)) ~== (eqv (@typof A B TA (@TT B TB) f x)))
  (** why ii ― strict univalence? ― how to get that?  *)  
                (ii: Id (@Ua B TB (@typof A B TA (@TT B TB) f x) (@typof A B TA (@TT B TB) f x) (eqv (@typof A B TA (@TT B TB) f x))) 
                        (refl (@typof A B TA (@TT B TB) f x))),
-  Id (Ua (@theta _ _ _ _ f x y (@idtoeqvT _ _ _ _ p))) (ap (@typof A B TA (@TT B TB) f) p).
+  Id (Ua (@phi _ _ _ _ f x y (@idtoeqvT _ _ _ _ p))) (ap (@typof A B TA (@TT B TB) f) p).
 Proof. intros.
        specialize (@Ua2 B TB _ _ _ _ i); intro HH.
        induction p. cbn in *.
@@ -2223,7 +2186,7 @@ Proof. unshelve econstructor.
            exact (∑ f: A -> B, Typfun TA TB f).
          + intro f. cbn in *.
            exists (@typof A B TA TB f).
-           exists (@theta A B TA TB f).
+           exists (@phi A B TA TB f).
            split. intros. split.
            now rewrite d6i.
            now rewrite d6ii.
@@ -2238,5 +2201,30 @@ Proof. unshelve econstructor.
            exists f.
            unshelve econstructor.
 Admitted.
+
+
+Definition TrucatedTypoid (A: Type): Typoid A.
+Proof. unshelve econstructor.
+       - unshelve econstructor.
+         + exact (fun x y: A => unit).
+         + exact (fun x => tt).
+         + exact (fun x y z p q => tt).
+         + exact (fun x y p => tt).
+       - cbn. exact (fun (x y: A) (p q: unit) => Id p q).
+       - cbn. intros x y e. exact refl.
+       - cbn. intros x y e d p. exact (inverse p).
+       - cbn. intros x y e d f p q. exact (concat p q).
+       - cbn. intros x y e. now destruct e.
+       - cbn. intros x y e. now destruct e.
+       - cbn. intros x y e. exact refl.
+       - cbn. intros x y e. exact refl.
+       - cbn. intros x y z t p q w. exact refl.
+       - cbn. intros x y z e1 d1 e2 d2 p q. exact refl.
+       - repeat intro. now induction H, H0.
+       - repeat intro. cbn. easy.
+       - repeat intro. now induction H.
+Defined. 
+
+
 
  
