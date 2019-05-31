@@ -2203,7 +2203,7 @@ Proof. unshelve econstructor.
 Admitted.
 
 
-Definition TrucatedTypoid (A: Type): Typoid A.
+Definition TruncatedTypoid (A: Type): Typoid A.
 Proof. unshelve econstructor.
        - unshelve econstructor.
          + exact (fun x y: A => unit).
@@ -2224,6 +2224,60 @@ Proof. unshelve econstructor.
        - repeat intro. cbn. easy.
        - repeat intro. now induction H.
 Defined. 
+
+Proposition h27 (A B: Type) (T: Typoid B) (f: B -> A): T ~> TruncatedTypoid A.
+Proof. unshelve econstructor.
+        - exact f.
+        - intros x y e. exact tt.
+        - cbn. intros x y e d i. exact refl.
+        - cbn. intro b. exact refl.
+        - cbn. intros x y z p q. exact refl.
+        - repeat intro. easy.
+Defined.
+
+Corollary h28 (A B: Type) (f: B -> A): TruncatedTypoid B ~> TruncatedTypoid A.
+Proof. unshelve econstructor.
+        - exact f.
+        - cbn. intros x y e. exact tt.
+        - cbn. intros x y e d p. exact refl.
+        - cbn. intro x. exact refl.
+        - cbn. intros x y z e d. exact refl.
+        - repeat intro. easy.
+Defined.
+
+Lemma isProp_isSet (A: Type): isProp A -> isSet A.
+Proof. intro p.
+        unfold isSet, isProp in *.
+        intros x y r q. induction r.
+        dependent induction q.
+        easy.
+Defined.
+
+Proposition h29 (A: Type) (p: isProp A): UnivalentTypoid A.
+Proof. unshelve econstructor.
+        - exact (TruncatedTypoid A).
+        - cbn. intros x y e.
+          unfold isProp in p. exact (p x y).
+        - cbn. intros x y e d r. exact refl.
+        - cbn. intros x y q. specialize (isProp_isSet A p); intro s.
+          specialize (s x y (p x y) q). easy.
+        - cbn. intros x y e. 
+          unfold idtoeqvT, transport, Id_rect. cbn.
+          destruct (p x y). now destruct e.
+Defined.
+
+Corollary h30 (A B: Type) (f: A -> B) (p: isProp A) (TB: Typoid B): TruncatedTypoid A ~> TB.
+Proof. specialize (@h19_i A B f (h29 A p) TB); intros T.
+        exact T.
+Defined.
+
+
+Proposition h31 (A B: Type) (f: A -> B) (p: isProp B) (TB: Typoid B): TruncatedTypoid A ~> TB.
+Proof. specialize (h28 B A f); intro tf1.
+        specialize (h30 B B (id) p TB); intro tf2.
+        specialize (@p9 _ _ _ _ _ _ tf1 tf2); intros tf3.
+        exact tf3.
+Defined.
 
 
 
