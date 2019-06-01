@@ -1440,13 +1440,16 @@ Class Typoid (A: Type): Type :=
       Typ3       :  ∏ {x y z t: A} (e1: x ~* y) (e2: y ~* z) (e3: z ~* t), ((e1 o e2) o e3) ~== (e1 o (e2 o e3));
       Typ4       :  ∏ {x y z: A} (e1 d1: x ~* y) (e2 d2: y ~* z), e1 ~== d1 -> e2 ~== d2 -> (e1 o e2) ~== (d1 o d2);
       SP         :> ∏ {x y z: A}, CMorphisms.Proper ((@ett x y) ===> (@ett y z) ===> (@ett x z)) (star); 
-      EP         :> ∏ {x: A}, CMorphisms.Proper (@ett x x) (eqv x);
-      IP         :> ∏ {x y: A}, CMorphisms.Proper (@ett x y ===> @ett y x) (inv) 
+(*       EP         :> ∏ {x: A}, CMorphisms.Proper (@ett x x) (eqv x);
+      IP         :> ∏ {x y: A}, CMorphisms.Proper (@ett x y ===> @ett y x) (inv)  *)
    }.
 
 Notation "x '~==' y" := (ett x y) : type_scope.
 
 (* Instance EqRRel_ett: ∏ {A T} x y, RewriteRelation (@ett A T x y). *)
+
+(* Lemma asd: forall (A: Type) (x y: A) (T: Typoid A), x ~== y -> (eqv x) ~== (eqv x). *)
+
 
 Instance EqRel_ett: ∏ {A T} x y, Equivalence (@ett A T x y).
    constructor; intro.
@@ -1493,9 +1496,9 @@ Proof. intros.
          split; now rewrite Typ4.
         - cbn. repeat intro. destruct x0, y0, x1, y1, X, X0. cbn in *.
          split; apply Typ4; easy. 
-        - cbn. repeat intro. easy.
+(*        - cbn. repeat intro. easy.
        - cbn. repeat intro. destruct x0, y0, X. cbn in *.
-         split. now rewrite pr7. now rewrite pr8.
+         split. now rewrite pr7. now rewrite pr8. *)
 Defined.
 
 Definition e3 A: Typoid A.
@@ -1516,8 +1519,8 @@ Proof. unshelve econstructor.
         - intros. cbn. now destruct e1, e2, e3.
         - intros. cbn in *. now induction X, X0.
         - repeat intro. cbn. now induction X, X0.
-        - repeat intro. now cbn.
-        - repeat intro. cbn. now induction X.
+(*         - repeat intro. now cbn.
+        - repeat intro. cbn. now induction X. *)
 Defined.
 
 Definition e4 (A B: Type): Typoid (A -> B).
@@ -1551,8 +1554,8 @@ Proof. unshelve econstructor.
        - cbn. intros.
          now induction (X x0), (X0 x0).
        - repeat intro. cbn. now induction (X x2), (X0 x2).
-       - repeat intro. now cbn.
-       - repeat intro. cbn. now induction (X x1).
+(*        - repeat intro. now cbn.
+       - repeat intro. cbn. now induction (X x1). *)
 Defined.
 
 Example e5_isequiv: Typoid (Type).
@@ -1648,7 +1651,7 @@ Proof. unshelve econstructor.
          specialize (X0 (pr3 x0)).
          specialize (X x0). 
          now induction X, X0.
-       - repeat intro. now cbn.
+(*        - repeat intro. now cbn.
        - repeat intro.
          destruct x0, y0, (h249_ii pr4), pr8, ( h249_ii pr6 ), pr11,
          ( h249_ii pr4 ). cbn.
@@ -1665,8 +1668,8 @@ Proof. unshelve econstructor.
          rewrite <- X in pr20.
          specialize (pr16 b).
          apply Id_eql in pr16.
-         rewrite pr16 in pr20.
-         exact (inverse pr20).
+         rewrite pr16 in pr20. 
+         exact (inverse pr20). *)
 Defined.
 
 Example e5_ishae: Typoid (Type).
@@ -1763,7 +1766,7 @@ Proof. unshelve econstructor.
          specialize (X0 (pr3 x0)).
          specialize (X x0).
          now induction X, X0.
-       - repeat intro. now cbn.
+(*        - repeat intro. now cbn.
        - repeat intro.
          destruct x0, y0, (h249_ii (ishae_isequiv pr3 pr4)), pr8, (h249_ii (ishae_isequiv pr5 pr6)), pr11
          . cbn. destruct (h249_ii (ishae_isequiv pr3 pr4)),  pr14, (h249_ii (ishae_isequiv pr5 pr6)).
@@ -1780,7 +1783,7 @@ Proof. unshelve econstructor.
          rewrite X in pr15.
          specialize (pr17 b).
          apply Id_eql in pr17.
-         now rewrite pr17 in pr15.
+         now rewrite pr17 in pr15. *)
 Defined.
 
 
@@ -1848,6 +1851,7 @@ Proposition p7 {A B: Type} (C: Typoid A) (D: Typoid B) (F: C ~> D):
 Proof. intros.
        assert (phi C (inv e) o (phi C e) ~== inv (phi C e) o (phi C e)).
        { setoid_rewrite Typ2_ii.
+         remember d6ii.
          setoid_rewrite <- d6ii.
          rewrite Typ2_ii.
          now setoid_rewrite d6i. }
@@ -2221,8 +2225,8 @@ Proof. unshelve econstructor.
        - cbn. intros x y z t p q w. exact refl.
        - cbn. intros x y z e1 d1 e2 d2 p q. exact refl.
        - repeat intro. now induction H, H0.
-       - repeat intro. cbn. easy.
-       - repeat intro. now induction H.
+(*        - repeat intro. cbn. easy.
+       - repeat intro. now induction H. *)
 Defined. 
 
 Proposition h27 (A B: Type) (T: Typoid B) (f: B -> A): T ~> TruncatedTypoid A.
