@@ -1473,7 +1473,7 @@ Proof. unshelve econstructor.
           + exact (fun x => refl x).
           + exact (fun (x y z: A) (p: Id x y) (q: Id y z) => concat p q).
           + exact (fun (x y: A) (p: Id x y) => inverse p).
-        - cbn. intros x y e d. exact (Id e d).
+        - exact (fun (x y: A) (e d: Id x y) => Id e d).
         - intros. now cbn.
         - cbn. intros. exact (inverse X).
         - cbn. intros. now induction X, X0.
@@ -1492,16 +1492,11 @@ Defined.
 Definition e4 (A B: Type): Typoid (A -> B).
 Proof. unshelve econstructor.
        - unshelve econstructor.
-         + intros f g.
-           exact (∏x: A, Id (f x) (g x)). 
-         + intro f. cbn.
-           exact (fun x: A => refl (f x)).
-         + cbn. intros f g h H G.
-           exact (fun x => concat (H x) (G x)).
-         + cbn. intros f g H.
-           exact (fun x => inverse (H x)).
-       - intros f g H H'. cbn in *.
-         exact (∏x: A, Id (H x) (H' x)).
+         + exact (fun (f g: A -> B) => ∏x: A, Id (f x) (g x)). 
+         + exact (fun (f: A -> B) (x: A) => refl (f x)).
+         + cbn. exact (fun (f g h: A -> B) (e1: ∏ x : A, Id (f x) (g x)) (d: ∏ x : A, Id (g x) (h x)) (x: A) => concat (e1 x) (d x)).
+         + exact (fun (f g: A -> B) (e1: ∏ x : A, Id (f x) (g x)) (x: A) => inverse (e1 x)).
+       - exact (fun (f g: A -> B) (e1 e2: ∏ x : A, Id (f x) (g x)) => ∏x: A, Id (e1 x) (e2 x)).
        - cbn. intros. easy.
        - cbn. intros.
          exact (inverse (X x0)).
@@ -1643,8 +1638,7 @@ Defined.
 Example e5_ishae: Typoid (Type).
 Proof. unshelve econstructor.
        - unshelve econstructor.
-         + intros A B.
-           exact (∑ f: A -> B, ishae f).
+         + exact (fun A B: Type => ∑ f: A -> B, ishae f).
          + intros. cbn.
            exists id. apply isequiv_ishae.
            unshelve econstructor.
@@ -1683,8 +1677,8 @@ Proof. unshelve econstructor.
            ++ exact f.
            ++ split; easy.
        - cbn. intros A B (f, u) (f', u').
-         exact (homotopy f f').
-(*          exact (∏x: A, Id (f x) (f' x)). *)
+(*          exact (homotopy f f'). *)
+         exact (∏x: A, Id (f x) (f' x)).
        - cbn. intros. now destruct e.
        - cbn. intros. destruct d, e.
          intro a.
@@ -1855,7 +1849,7 @@ Proof. intros.
        unshelve econstructor.
        - exact id.
        - cbn. intros x y e. exact (idtoeqvT e).
-       - cbn. intros. now induction i.
+       - cbn. intros. exact (idtoeqvT2 i).
        - cbn. intro a. now unfold id.
        - cbn. intros. induction e1, e2. cbn.
          now rewrite Typ1_i.
@@ -2054,8 +2048,8 @@ Definition eqUni: ∏ {A: Type}, UnivalentTypoid A.
 Proof. intros.
        unshelve econstructor.
        - exact (e3 A).
-       - cbn. easy.
-       - cbn. easy.
+       - cbn. intros. exact (id e).
+       - cbn. intros. unfold id. exact (id i).
        - cbn. intros.
          induction p. cbn. easy.
        - cbn. intros.
@@ -2275,10 +2269,10 @@ Definition TruncatedTypoid (A: Type): Typoid A.
 Proof. unshelve econstructor.
        - unshelve econstructor.
          + exact (fun x y: A => unit).
-         + exact (fun x => tt).
-         + exact (fun x y z p q => tt).
-         + exact (fun x y p => tt).
-       - cbn. exact (fun (x y: A) (p q: unit) => Id p q).
+         + exact (fun x: A => tt).
+         + exact (fun (x y z: A) (e1 d: unit) => tt).
+         + exact (fun (x y: A) (e1: unit) => tt).
+       - exact (fun (x y: A) (e1 e2: unit) => (Id e1 e2)).
        - cbn. intros x y e. exact refl.
        - cbn. intros x y e d p. exact (inverse p).
        - cbn. intros x y e d f p q. exact (concat p q).
@@ -2324,9 +2318,8 @@ Defined.
 Proposition h29 (A: Type) (p: isProp A): UnivalentTypoid A.
 Proof. unshelve econstructor.
         - exact (TruncatedTypoid A).
-        - cbn. intros x y e.
-          unfold isProp in p. exact (p x y).
-        - cbn. intros x y e d r. exact refl.
+        - cbn. intros x y e. exact (id (p x y)).
+        - cbn. intros x y e d r. exact (id refl).
         - cbn. intros x y q. specialize (isProp_isSet A p); intro s.
           specialize (s x y (p x y) q). easy.
         - cbn. intros x y e. 
