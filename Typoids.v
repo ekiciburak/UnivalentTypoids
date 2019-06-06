@@ -1676,12 +1676,13 @@ Proof. unshelve econstructor.
            unshelve econstructor.
            ++ exact f.
            ++ split; easy.
-       - cbn. intros A B (f, u) (f', u').
-(*          exact (homotopy f f'). *)
-         exact (∏x: A, Id (f x) (f' x)).
+       - cbn. intros A B (f, u) (f', v).
+(*  (f, u) (f', u'). *)
+          exact (homotopy f f'). 
+(*          exact (fun (e1 e2: ∑ f: A -> B, ishae f) => ∏x: A, Id ((pr1 e1) x) ((pr1 e2) x)). *)
        - cbn. intros. now destruct e.
        - cbn. intros. destruct d, e.
-         intro a.
+         intro a. 
          specialize (X a).
          now apply inverse in X.
        - cbn. intros.
@@ -1725,7 +1726,8 @@ Proof. unshelve econstructor.
          (h249_ii (ishae_isequiv pr7 pr8)), pr12, (h249_ii (ishae_isequiv pr5 pr6)), pr17,
          pr14, (h249_ii (ishae_isequiv pr9 pr10)), pr21.
          cbn in *.
-         intro x0. unfold compose.
+         unfold compose.
+         intro x0.
          specialize (X0 (pr3 x0)).
          specialize (X x0).
          now induction X, X0.
@@ -2271,8 +2273,8 @@ Proof. unshelve econstructor.
          + exact (fun x y: A => unit).
          + exact (fun x: A => tt).
          + exact (fun (x y z: A) (e1 d: unit) => tt).
-         + exact (fun (x y: A) (e1: unit) => tt).
-       - exact (fun (x y: A) (e1 e2: unit) => (Id e1 e2)).
+         + exact (fun (x y: A) (e: unit) => tt).
+       - exact (fun (x y: A) (e d: unit) => (Id e d)).
        - cbn. intros x y e. exact refl.
        - cbn. intros x y e d p. exact (inverse p).
        - cbn. intros x y e d f p q. exact (concat p q).
@@ -2327,7 +2329,7 @@ Proof. unshelve econstructor.
           destruct (p x y). now destruct e.
 Defined.
 
-Corollary h30 (A B: Type) (f: A -> B) (p: isProp A) (TB: Typoid B): TruncatedTypoid A ~> TB.
+Corollary h30 (A B: Type) (f: A -> B) (p: isProp A) (TB: Typoid B): TruncatedTypoid A ~> TB.	
 Proof. specialize (@h19_i A B f (h29 A p) TB); intros T.
         exact T.
 Defined.
