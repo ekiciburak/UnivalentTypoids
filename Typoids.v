@@ -686,6 +686,89 @@ Lemma h432: ∏ {A B: Type} (f: A -> B),
           ((isequiv f) -> (isContrf f)) .
 Proof. intros. split. apply h432_ii. apply h432_i. Defined.
 
+Definition Y {A: Type} (a x: A) := Id x a.
+Definition Hom {A: Type} (P Q: A -> Type) := ∏ x: A, (P x -> Q x).
+
+Lemma DepTransNat {A: Type} (x y: A) (p: Id x y) (P Q: A -> Type) (tau: Hom P Q):
+  Id (compose (tau x) (transport Q p)) (compose (transport P p) (tau y)).
+Proof. now induction p. Defined.
+
+Definition ComposeHom {A: Type} (P Q R: A -> Type) 
+  (sig: Hom P Q) (tau: Hom Q R): Hom P R.
+Proof. compute in *.
+        intros x u.
+        specialize (sig x u).
+        specialize (tau x sig).
+        exact tau.
+Defined.
+
+Definition PreComposeHom {A: Type} (P P' Q: A -> Type) 
+  (tau: Hom P' P): Hom P Q -> Hom P' Q.
+Proof. compute in *.
+        intros sig x u.
+        specialize (tau x u).
+        specialize (sig x tau).
+        exact sig.
+Defined.
+
+Definition PostComposeHom {A: Type} (P Q Q': A -> Type) 
+  (sig: Hom Q Q'): Hom P Q -> Hom P Q'.
+Proof. compute in *.
+        intros tau x u.
+        specialize (tau x u).
+        specialize (sig x tau).
+        exact sig.
+Defined.
+
+Lemma Yoneda {A: Type} (P: A -> Type) (a: A): Equiv (Hom (@Y A a) P) (P a).
+Proof. unshelve econstructor.
+        - compute in *. intro H.
+          apply H. exact refl.
+        - apply h249_i.
+          unshelve econstructor.
+          + compute. intros u x p. 
+            induction p. exact u.
+          + split.
+            ++ compute. intro u. exact refl.
+            ++ compute. intro x.
+               apply funext. intro b.
+               apply funext. intro p.
+               induction p. easy.
+Defined.
+
+Lemma YonedaE {A: Type} (P P': A -> Type) (a a': A) (q: Id a a') (sig: Hom P P'): 
+  Hom (@Y A a) P -> Hom (@Y A a') P'.
+Proof. compute in *. intros H x p. apply sig. apply H. induction q. exact p. Defined.
+
+Lemma YonedaNatural {A: Type} (P P': A -> Type) (a a': A) (p: Id a a') (sig: Hom P P'):
+  Id
+    (compose (pr1 (@Yoneda A P a)) (compose (transport P p) (sig a')))
+    (compose (YonedaE P P' a a' p sig) (pr1 (@Yoneda A P' a'))).
+Proof. now induction p. Defined.
+
+(** refine the proof: should follow directly from Yoneda *)
+Corollary YaYb {A: Type} (a b: A): Equiv (Hom (@Y A a) (@Y A b)) (Id a b).
+Proof. specialize (Yoneda (Y b) a); intros H.
+        destruct H as (f, e).
+        unshelve econstructor.
+        - intro x.
+          clear e.
+          specialize (f x). compute in x.
+          apply x. exact refl.
+        - cbn. apply h249_i.
+          unshelve econstructor.
+          + intro p.
+            compute. intros x q.
+            now induction q.
+          + split.
+            ++ compute. easy.
+            ++ unfold homotopy, compose, id, Id_rect.
+                intro H.
+                apply funext. intro x.
+                apply funext. intro p.
+                compute in p. now induction p.
+Defined.
+
 Lemma h433: ∏ {A: Type} (P Q: A -> Type) {x: A} {v: Q x} (f: ∏ x: A, (P x -> Q x)),
   Equiv (fiber (totalA P Q f) {x; v}) (fiber (f x) v).
 Proof. intros A P Q x v f.
@@ -1483,7 +1566,8 @@ Proof. unshelve econstructor.
         - intros. cbn. now destruct e.
         - intros. cbn. now destruct e1, e2, e3.
         - intros. cbn in *. now induction X, X0.
-        - repeat intro. cbn. now induction X, X0.
+        - repeat intros x y z p1 p2 r q1 q2 s. cbn in *.
+           now induction r, s.
 (*         - repeat intro. now cbn.
         - repeat intro. cbn. now induction X. *)
 Defined.
@@ -1514,7 +1598,7 @@ Proof. unshelve econstructor.
          apply inverse, concat_assoc.
        - cbn. intros.
          now induction (X x0), (X0 x0).
-       - repeat intro. cbn. now induction (X x2), (X0 x2).
+       - repeat intro. cbn in *. now induction (X x2), (X0 x2).
 (*        - repeat intro. now cbn.
        - repeat intro. cbn. now induction (X x1). *)
 Defined.
@@ -2064,7 +2148,7 @@ Proof. intros.
         exact (ua {f; e}).
 Defined.
 
-Definition TypeUni_ishae: UnivalentTypoid Type.
+Definition TypeUni: UnivalentTypoid Type.
 Proof. unshelve econstructor.
        - exact e5_ishae.
        - unfold et. cbn.
@@ -2092,37 +2176,25 @@ Proof. unshelve econstructor.
        - cbn. intros.
          unfold idtoeqvT, transport, Id_rect, ua_ishae.
          destruct e as (f, p). cbn.
-         destruct (UA_ishae x y) as (q, cc).
-         unfold homotopy, compose in *.
-         admit.
-Admitted.
-
-Definition TypeUni: UnivalentTypoid Type.
-Proof. unshelve econstructor.
-       - exact e5_ishae.
-       - unfold et. cbn.
-         intros x y e.
-         destruct e as (f, e).
-         now apply ua_ih in e.
-       - cbn. intros.
-         destruct e as (f, u).
-         destruct d as (g, w).
-         unfold ua_ih.
-         apply funext in i.
-         induction i.
-         now induction (ishae_isProp a u w).
-       - cbn. intros.
-         unfold idtoeqvT, transport, Id_rect, ua_ih.
-         induction p. cbn.
-         unfold ua.
-         destruct (h249_ii (UA a a)) as (p, q).
-         destruct q as (q, r).
+         remember @ua_ishae.
+         clear Heqi.
+         specialize (@i  x y {f; p}).
+         induction i. 
+         destruct (UA_ishae a a) as (q, cc).
+         destruct cc as (eta, (eps, r)).
          unfold homotopy, compose, id in *.
-         specialize (r refl).
-         unfold idtoeqv, transport, Id_rect in r.
-         cbn in r. easy.
-       - admit.
-Admitted.
+         specialize (r (q {f; p})). cbn in r.
+         clear r. cbn in *.
+         specialize (eps {f; p}).
+         cbn in eps. dependent induction eps.
+         clear H.
+         specialize (eta (q {f; p})).
+         cbn. dependent induction eta.
+         unfold transport, Id_rect in x0. cbn in x0.
+         clear x1 x.
+         destruct (q {f; p} ). intro x.
+         rewrite <- x0. easy.
+Defined.
 
 Proposition h20: ∏ (A B: Type) (x y: A) (p: Id x y) (TA: Typoid A) (TB: UnivalentTypoid B) (f: TA ~> (@TT B TB))
  (** why i? ― strict typoid function ― how to get that? *) 
