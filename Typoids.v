@@ -1,7 +1,9 @@
 Require Import Setoid.
 Require Import Coq.Classes.CRelationClasses Coq.Classes.RelationClasses.
 Require Import Relations Morphisms.
-Require Import  Coq.Program.Equality.
+Require Import Equality. 
+
+Local Unset Elimination Schemes.
 
 (* Definition Type := Type.
 
@@ -33,9 +35,12 @@ Inductive Id {A: Type}: A -> A -> Type :=
   refl: forall a, Id a a.
 
 Arguments refl {A a} , [A] a.
-Check Id_ind.
+
+Scheme Id_ind := Induction for Id Sort Type.
 Arguments Id_ind [A] P f y y0 i.
+Scheme Id_rec := Minimality for Id Sort Type.
 Arguments Id_rec [A] P f y y0 i.
+Definition Id_rect := Id_ind.
 
 Definition compose {A B C: Type} (f: A -> B) (g: B -> C): (A -> C).
 Proof. intro a. now apply g, f. Defined.
@@ -322,13 +327,12 @@ Proof. intros.
               destruct w as  (x, w).
               destruct w' as (y, w').
               destruct a as (p, a). cbn in *.
-              induction p. cbn.
-              dependent induction a. now cbn.
+              induction p. cbn.  
+              compute in a. induction a. now cbn.
             * unfold homotopy, compose, id.
               intro a.
               destruct w as  (x, w).
-              destruct w' as (y, w').
-              dependent induction a. now cbn.
+              destruct w' as (y, w'). induction a. cbn. destruct a. easy.
 Defined.
 
 Lemma ishae_qinv: ∏ {A B: Type} {f: A -> B}, ishae f -> qinv f.
@@ -639,9 +643,9 @@ Proof. intros.
         destruct b as (b, q).
         specialize (@h432c A B f e a b y); intro H.
         assert (H0: dirprod (Id (f a) y) (Id (f b) y) ) by easy.
-        specialize (H H0).
-        induction H. dependent induction p.
-        dependent induction q. easy.
+        specialize (H H0). induction H.
+        dependent destruction p.
+        dependent destruction q. easy.
 Defined.
 
 Lemma h432_i: ∏ {A B: Type} (f: A -> B), isequiv f -> isContrf f.
@@ -789,11 +793,11 @@ Proof. intros A P Q x v f.
              now induction pr4.
            * split.
              ++ cbn. unfold homotopy, compose.
-                intro a. destruct a.
-                dependent induction pr4. now cbn.
+                intro a. destruct a. compute in *.
+                dependent destruction pr4. easy.
              ++ cbn. unfold homotopy, compose.
                 intro a. destruct a. destruct pr3.
-                dependent induction pr4. now cbn.
+                dependent destruction pr4. now cbn.
 Defined.
 
 Lemma h434: ∏ {A: Type} (P: A -> Type) {a: A},
@@ -814,7 +818,7 @@ Proof. intros.
              intro p. now cbn.
            * unfold homotopy, compose, id.
              intro p. destruct p as ((y, t), q).
-             dependent induction q. now cbn.
+             compute in *. now induction q.
 Qed.
 
 (** supposed to use h432? *)
@@ -949,12 +953,13 @@ Proof. intros A B f (e1, e2).
         unshelve econstructor.
         - set (q := concat (inverse (pr2 e2 (f a))) (pr2 e2 y)).
           unfold fiber. exists a. exact q.
-        - cbn. intros. destruct x as (c, g). dependent induction g.
-          induction p1. specialize (p2 (f a0)). induction p2. cbn in *.
-          assert (Id a0 c). destruct e1. easy. 
+        - cbn. intros. destruct x as (c, g).
+          dependent destruction g.
+          induction p1. specialize (p2 (f a)). induction p2. cbn in *.
+          assert (Id a c). destruct e1. easy. 
           induction X.
           destruct e2. cbn.
-          specialize (@concat_inverse_l _ _ _ (pr4 (f a0))); intro p.
+          specialize (@concat_inverse_l _ _ _ (pr4 (f a))); intro p.
           now induction p.
 Defined.
 
@@ -1116,11 +1121,12 @@ Proof. intros A B f e.
            unshelve econstructor.
            + clear tau. specialize (eta x).
              now induction p.
-           + dependent induction p. cbn.
+           + dependent destruction p. cbn.
              specialize (@r_concat_refl _ _ _ (ap f (eta x))); intros.
              apply Id_eql in X. rewrite X.
              apply tau.
 Defined.
+
 
 Lemma eta_expansion_dep {A} {B : A -> Type} (f : forall x : A, B x) :
   f = (fun x => f x).
@@ -2064,7 +2070,7 @@ Proof. unshelve econstructor.
            rewrite He1, He2, <- HH.
            specialize (@UT_ob1 A UT _ _ (concat (Ua e1) (Ua e2))); intro p.
            specialize (@UT_ob1 A UT _ _ (Ua (e1 o e2))); intro q.
-           induction p, q, a. dependent induction a0. easy.
+           induction p, q, a. dependent destruction a0. easy.
          }
          rewrite X in X0.
          specialize (@Ua2 A UT _ _ _ _ X0); intros HH.
@@ -2089,12 +2095,12 @@ Proof. unshelve econstructor.
          specialize (@UT_ob2 A U _ _ (eqv a)); intro H.
          assert (p: Id (ap f (@phi A A (@TT A U) (e3 A) (h18 U) a a (eqv a))) (ap f (Ua (eqv a)))).
          { now cbn. }
-         induction p. dependent induction a0. now cbn.
+         induction p. dependent destruction a0. now cbn.
        - cbn. intros.
          specialize (@UT_ob1 A U _ _ (Ua e1)); intro p.
          specialize (@UT_ob1 A U _ _ (Ua e2)); intro q.
          specialize (@UT_ob1 A U _ _ (Ua (e1 o e2))); intro r.
-         induction p, q, r, a, a0. dependent induction a1. cbn.
+         induction p, q, r, a, a0. dependent destruction a1. cbn.
          now rewrite Typ1_i.
        - repeat intro. 
          specialize (@Ua2 A U x y x0 y0 X); intro HH.
@@ -2186,10 +2192,10 @@ Proof. unshelve econstructor.
          specialize (r (q {f; p})). cbn in r.
          clear r. cbn in *.
          specialize (eps {f; p}).
-         cbn in eps. dependent induction eps.
+         cbn in eps. dependent destruction eps.
          clear H.
          specialize (eta (q {f; p})).
-         cbn. dependent induction eta.
+         cbn. dependent destruction eta.
          unfold transport, Id_rect in x0. cbn in x0.
          clear x1 x.
          destruct (q {f; p} ). intro x.
@@ -2252,9 +2258,9 @@ Proof. intros.
           specialize (@idtoeqvT B (pr2 z) (pr2 w) TB p2); intro e2.
           now apply p11T. 
         - cbn. intros z w p q i.
-          induction p. cbn. dependent induction q. cbn. split; easy.
+          induction p. cbn. dependent destruction q. cbn. split; easy.
         - cbn. intros z. unfold id. split; easy.
-        - cbn. intros x y z e d. induction e. cbn. dependent induction d. cbn.
+        - cbn. intros x y z e d. induction e. cbn. dependent destruction d. cbn.
           split; destruct a; cbn; now rewrite Typ1_ii.
         - cbn. repeat intro. induction X. split; easy.
 Defined.
@@ -2287,12 +2293,12 @@ Proof. intros.
            specialize (@Ua2 B TB _ _ e2 d2 i2); intro H2.
            split; easy.
          - intros z w p.
-           cbn. destruct z, w. dependent induction p. cbn.
+           cbn. destruct z, w. dependent destruction p. cbn.
            unfold Id_rect. 
            specialize (@Ua2 A TA _ _ (eqv pr5) (eqv pr5) (ett_refl (eqv pr5))); intro p.
-           induction p. dependent induction a.
+           induction p. dependent destruction a.
            specialize (@Ua2 B TB _ _ (eqv pr6) (eqv pr6) (ett_refl (eqv pr6))); intro p.
-           induction p. dependent induction a0. easy.
+           induction p. dependent destruction a0. easy.
          - intros z w e. cbn.
            destruct z as (z1, z2).
            destruct w as (w1, w2).
@@ -2385,7 +2391,7 @@ Lemma isProp_isSet (A: Type): isProp A -> isSet A.
 Proof. intro p.
         unfold isSet, isProp in *.
         intros x y r q. induction r.
-        dependent induction q.
+        dependent destruction q.
         easy.
 Defined.
 
