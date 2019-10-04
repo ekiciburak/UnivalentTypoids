@@ -1017,12 +1017,10 @@ Class product {A B C D: Type} (f: A -> B) (g: C -> D): Type :=
 *)
 
 Definition ProductTypoidFunction {A B C D: Type}
-                                  {f: A -> C}
-                                  {g: B -> D}
-                                  (TA: Typoid A)
-                                  (TB: Typoid B)
-                                  (TC: Typoid C)
-                                  (TD: Typoid D)
+                                  {TA: Typoid A}
+                                  {TB: Typoid B}
+                                  {TC: Typoid C}
+                                  {TD: Typoid D}
                                   (F: TypoidFunction TA TC)
                                   (G: TypoidFunction TB TD):
   TypoidFunction (ProductTypoid TA TB) (ProductTypoid TC TD).
@@ -1096,6 +1094,37 @@ Proof. unshelve econstructor.
           split; now rewrite Typ1_i, Typ1_ii.
         - repeat intros.
           now unfold CMorphisms.Proper.
+Defined.
+
+(** The Evaluation functor *)
+Definition EvalF {A B: Type}
+                 (TA: Typoid A)
+                 (TB: Typoid B): TypoidFunction (ProductTypoid (ExponentialTypoid TA TB) TA) TB.
+Proof. unshelve econstructor.
+       - intros (F, a). exact (fobj F a).
+       - intros (F, a) (G, b) (nt1, f).
+         cbn in *.
+         exact ((fmap F f) o (trans nt1 b)).
+       - intros (F, a). destruct F. cbn.
+         now rewrite fmap_pid0, Typ1_i.
+       - intros (F, a) (G, b) (H, c) e1 e2. cbn in e1, e2.
+         destruct e1 as (nt1, f).
+         destruct e2 as (nt2, g). cbn. destruct F, G, H. cbn.
+         destruct nt1, nt2. cbn in *.
+         rewrite fmap_pcomp0. rewrite Typ3. setoid_rewrite <- Typ3 at 2.
+         rewrite trans_cc0. now do 2 rewrite Typ3. 
+       - intros (F, a) (G, b) e d i.
+         cbn in e, d.
+         destruct e as (nt1, f).
+         destruct d as (nt2, g).
+         destruct i as (i, j).
+         rewrite j. destruct nt1, nt2. cbn in *.
+         now rewrite (i b).
+       - repeat intro. 
+         destruct x as (F, a).
+         destruct y as (G, b).
+         destruct x0, y0.
+         destruct X. cbn in *. now rewrite (e3 b), e4.
 Defined.
 
 (** The Curry functor *)
@@ -1976,7 +2005,7 @@ Proof. unshelve econstructor.
          now induction X.
 Defined.
 
-Definition CurHomT {A: Type} {TA: Typoid A}: 
+Definition CurHomT {A: Type} (TA: Typoid A): 
   TypoidFunction (ProductTypoid (OppositeT TA) TA) TypoidUni.
 Proof. unshelve econstructor.
        intros.
@@ -2028,9 +2057,74 @@ Proof. destruct F.
        - repeat intro. now rewrite X.
 Defined.
 
+Definition Twist {A B: Type} (TA: Typoid A) (TB: Typoid B): 
+  TypoidFunction (ProductTypoid TA TB) (ProductTypoid TB TA).
+Proof. unshelve econstructor.
+      - intro a. exact (snd a, fst a).
+      - intros x y f. exact (snd f, fst f).
+      - easy.
+      - intros (a, b) (c, d) (e, f) (e1, e2) (e3, e4). cbn in *. easy.
+      - intros (a, b) (c, d) (e1, e2) (d1, d2) (i, j). cbn. easy.
+      - repeat intro. destruct x0, y0. cbn in *.
+        destruct X as (i, j). split. now rewrite j. now rewrite i.
+Defined.
+
+Definition IdTF {A: Type} (TA: Typoid A): TypoidFunction TA TA.
+Proof. unshelve econstructor.
+       - exact id.
+       - intros. exact X.
+       - now unfold id.
+       - easy.
+       - easy.
+       - easy.
+Defined.
+
+Definition ComposeTF {A B C: Type} {TA: Typoid A} {TB: Typoid B} {TC: Typoid C}
+                     (f: TypoidFunction TA TB) (g: TypoidFunction TB TC): TypoidFunction TA TC.
+Proof. unshelve econstructor.
+       - exact (fun a => (fobj g (fobj f a))).
+       - intros x y e. unfold compose.
+         exact (fmap g (fmap f e)).
+       - cbn. intros. unfold compose.
+         now do 2 rewrite <- fmap_pid.
+       - cbn. intros.
+         now do 2 rewrite fmap_pcomp.
+       - cbn. intros. now rewrite i.
+       - repeat intro. now rewrite X.
+Defined.
+
+Definition OppositeTF {A B: Type} {TA: Typoid A} {TB: Typoid B} (F: TypoidFunction TA TB): 
+  TypoidFunction (OppositeT TA) (OppositeT TB).
+Proof. unshelve econstructor.
+       - exact (fobj F).
+       - intros x y f. exact (fmap F f).
+       - cbn. intros.
+         unfold OppositeS_obligation_1.
+         now rewrite fmap_pid.
+       - cbn. intros. unfold OppositeS_obligation_2.
+         now rewrite fmap_pcomp.
+       - cbn. intros. now rewrite i.
+       - repeat intro. now rewrite X.
+Defined.
+
 Definition YonedaEmbedding {A: Type} (TA: Typoid A): 
   TypoidFunction TA (ExponentialTypoid (OppositeT TA) (TypoidUni)) :=
   CurryF (@Flatten A TA (@CurHomT A (OppositeT TA))).
+
+Definition YonedaL {A: Type} (TA: Typoid A):
+  TypoidFunction (ProductTypoid (OppositeT TA) (ExponentialTypoid (OppositeT TA) (TypoidUni))) (TypoidUni) :=
+  ComposeTF (ProductTypoidFunction (OppositeTF (YonedaEmbedding TA)) (IdTF (ExponentialTypoid (OppositeT TA) (TypoidUni))))
+            (@CurHomT _ (ExponentialTypoid (OppositeT TA) (TypoidUni))).
+
+Definition YonedaR {A: Type} (TA: Typoid A): 
+  TypoidFunction (ProductTypoid (OppositeT TA) (ExponentialTypoid (OppositeT TA) TypoidUni)) TypoidUni :=
+  ComposeTF (Twist _ _ ) (EvalF (OppositeT TA) TypoidUni).
+
+Definition YonedaLR {A: Type} (TA: Typoid A): TypoidNT (YonedaL TA) (YonedaR TA).
+Admitted.
+
+Definition YonedaRL {A: Type} (TA: Typoid A): TypoidNT (YonedaR TA) (YonedaL TA).
+Admitted.
 
 Class UnivalentTypoid (A: Type): Type :=
    mkUnivalentTypoid
