@@ -162,6 +162,12 @@ Proof. intros.
 Qed.
 
 
+Lemma Typ9: forall {A: Type} {x y: A} {T: Typoid A} (f: x ~> y),
+  inv (eqv x) o f == f.
+Proof. intros. specialize (@Typ2_i _ T x y f); intro H.
+       now rewrite <- H, Typ5, Typ3, Typ6, Typ2_ii, Typ1_ii.
+Defined.
+
 Reserved Notation "x '~~>' y" (at level 70, y at next level).
 
 (** functors *)
@@ -1094,9 +1100,9 @@ Defined.
 
 (** The Curry functor *)
 Definition CurryF {A B C: Type} 
-                   (TA: Typoid A)
-                   (TB: Typoid B)
-                   (TC: Typoid C)
+                   {TA: Typoid A}
+                   {TB: Typoid B}
+                   {TC: Typoid C}
                    (F: TypoidFunction (ProductTypoid TC TA) TB): 
   TypoidFunction TC (ExponentialTypoid TA TB).
 Proof. unshelve econstructor.
@@ -1264,11 +1270,19 @@ Proof. intros A x y T p.
         exact (transport (fun z => x ~> z) p (eqv x)).
 Defined.
 
+Definition idtoeqvTT: ∏ {A: Type} {x y: A} {T: Typoid A} {f g: x ~> y} (p: Id f g), f == g.
+Proof. intros A x y T f g p.
+       now induction p.
+Defined.
+
 Definition UA_def: Type := ∏ (A B: Type), isequiv (@idtoeqv A B).
 Axiom UA: UA_def.
 
 Definition UA_defT: Type := ∏ (A: Type) (x y: A) (T: Typoid A), isequiv (@idtoeqvT A x y T).
 Axiom UAT: UA_defT.
+
+Definition UA_defTT: Type := ∏ (A: Type) (x y: A) (T: Typoid A) (f g: x ~> y), isequiv (@idtoeqvTT A x y T f g).
+Axiom UATT: UA_defTT.
 
 Definition happly {A: Type} {B: A -> Type} (f g: ∏x: A, B x): (Id f g) -> homotopy f g.
 Proof. intros p a. now induction p. Defined.
@@ -1936,6 +1950,88 @@ Proof. intros.
 Defined.
 
 
+Definition Yoneda {A: Type} {a: A} (TA: Typoid A): TypoidFunction TA Uni.
+Proof. unshelve econstructor.
+       - intro x. exact (et (@st _ TA) x a).
+       - cbn. intros x y e.
+         exists (fun p: x ~> a => (inv e) o p).
+         apply qinv_ishae.
+         unshelve econstructor.
+         + exact (fun p => e o p).
+         + split.
+           ++ red. intro f. unfold compose, id.
+              eapply UATT.
+              now rewrite <- Typ3, Typ2_ii, Typ1_i.
+           ++ red. intro f. unfold compose, id.
+              eapply UATT.
+              now rewrite <- Typ3, Typ2_i, Typ1_i.
+       - cbn. intro x. red. intro e. unfold id.
+         eapply UATT. now rewrite Typ9.
+       - cbn. intros x y z e d f.
+         unfold compose.
+         apply UATT. now rewrite Typ5, Typ3.
+       - cbn. intros x y e d i. red. intro p.
+         apply UATT in i. now induction i.
+       - repeat intro. apply UATT in X.
+         now induction X.
+Defined.
+
+Definition CurHomT {A: Type} {TA: Typoid A}: 
+  TypoidFunction (ProductTypoid (OppositeT TA) TA) TypoidUni.
+Proof. unshelve econstructor.
+       intros.
+       - exact (et (@st _ TA) (fst X) (snd X)). 
+       - cbn. intros x y f.
+         destruct f as (e, p). cbn in *.
+         destruct x, y. cbn in *.
+         exists (fun f: a ~> a0 => e o f o p).
+         apply qinv_ishae.
+         unshelve econstructor.
+         + intro f. exact ((inv e) o f o (inv p)).
+         + split.
+           ++ red. cbn. unfold compose, id. intro f.
+              eapply UATT. repeat rewrite Typ3.
+              now rewrite Typ2_ii, Typ1_ii, <- Typ3, Typ2_i, Typ1_i.
+           ++ red. intro f. unfold compose, id.
+              apply UATT. repeat rewrite Typ3.
+              now rewrite Typ2_i, Typ1_ii, <- Typ3, Typ2_ii, Typ1_i.
+       - intros. destruct x. cbn. red. intro f.
+         apply UATT. unfold OppositeS_obligation_1, id.
+         now rewrite Typ1_i, Typ1_ii.
+       - intros. destruct x. destruct y. destruct z.
+         destruct e1, e2. cbn in *.
+         red. intro f.
+         apply UATT. unfold compose, OppositeS_obligation_2.
+         now repeat rewrite Typ3.
+       - intros. destruct x, y. destruct e, d.
+         cbn in *. red. 
+         intro f. apply UATT.
+         destruct i as (i, j).
+         now rewrite i, j.
+       - repeat intro. destruct x, y.
+         destruct x0, y0. cbn in *.
+         red. intro f.
+         apply UATT. destruct X as (i, j).
+         now rewrite i, j.
+Defined.
+
+Definition Flatten {A: Type} {TA: Typoid A}
+                   (F: TypoidFunction (ProductTypoid (OppositeT (OppositeT TA)) (OppositeT TA)) TypoidUni): 
+                   TypoidFunction (ProductTypoid TA (OppositeT TA)) TypoidUni.
+Proof. destruct F.
+       unshelve econstructor.
+       - exact fobj0.
+       - exact fmap0.
+       - intros. now rewrite fmap_pid0.
+       - intros. now rewrite fmap_pcomp0.
+       - easy.
+       - repeat intro. now rewrite X.
+Defined.
+
+Definition YonedaEmbedding {A: Type} (TA: Typoid A): 
+  TypoidFunction TA (ExponentialTypoid (OppositeT TA) (TypoidUni)) :=
+  CurryF (@Flatten A TA (@CurHomT A (OppositeT TA))).
+
 Class UnivalentTypoid (A: Type): Type :=
    mkUnivalentTypoid
    {
@@ -1946,9 +2042,7 @@ Class UnivalentTypoid (A: Type): Type :=
       UT_ob2     :  ∏ {x y: A} (e: x ~> y), @idtoeqvT A x y TT (Ua e) == e;
    }.
 
-
-
-Definition TypeUni: UnivalentTypoid Type.
+(* Definition TypeUni: UnivalentTypoid Type.
 Proof. unshelve econstructor.
        - exact Uni.
        - unfold et. cbn.
@@ -1996,7 +2090,6 @@ Proof. unshelve econstructor.
          rewrite <- x0. easy.
 Defined.
 
-
 (** Universe of Typoids [correspondingly Category of Sets] *)
 Definition UniTypoidUni: UnivalentTypoid Type.
 Proof. unshelve econstructor.
@@ -2041,47 +2134,7 @@ Proof. unshelve econstructor.
          clear x1 x.
          destruct (q {f; p} ). intro x.
          rewrite <- x0. easy.
-Defined.
-
- 
-(* Fixpoint Yoneda {A: Type} {a: A} (TA: Typoid A): TypoidFunction TA Uni.
-Proof. unshelve econstructor.
-       - intro x. exact (et (@st _ TA) x a).
-       - cbn. intros x y e.
-         exists (fun p: x ~> a => (inv e) o p).
-         apply qinv_ishae. 
-         unshelve econstructor.
-         + intro f. exact (e o f).
-         + split.
-           ++ red. intro f. unfold compose, id.
-              specialize (Yoneda A a TA).
-              destruct Yoneda.
-              apply UA.
-              rewrite <- Typ3.
-              rewrite Typ2_i. *)
-
-(* 
-Definition CurHomT {A: Type} {TA: Typoid A}: 
-  TypoidFunction (ProductTypoid (OppositeT TA) TA) (@TT _ UniTypoidUni).
-Proof. unshelve econstructor.
-       intros.
-       - exact (et (@st _ TA) (fst X) (snd X)). 
-       - cbn. intros x y f.
-         destruct f as (e, p). cbn in *.
-         destruct x, y. cbn in *.
-         exists (fun f: a ~> a0 => e o f o p).
-         apply qinv_ishae.
-         unshelve econstructor.
-         + intro f. exact ((inv e) o f o (inv p)).
-         + split.
-           ++ red. cbn. unfold compose, id. intro f.
-              eapply UAT.
- 
-Admitted.
-
-
- *)
-
+Defined.  *)
 
 
 
