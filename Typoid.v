@@ -107,7 +107,7 @@ Proof. unshelve econstructor.
         - repeat intro. exact (IP x0 y0 X).
 Defined.
 
-
+(* 
 Definition OppositeTypoid {A: Type} (T: Typoid A): Typoid A.
 Proof. destruct T, st0.
         unshelve econstructor.
@@ -143,7 +143,7 @@ Proof. destruct T, st0.
           exact (SP0 z y x x1 y1 X0 x0 y0 X).
         - repeat intro. exact (EP0 x).
         - repeat intro. exact (IP0 y x x0 y0 X).
-Defined.
+Defined. *)
 
 Definition ProductTypoid: ∏ {A B: Type} (TA: Typoid A) (TB: Typoid B), Typoid (A * B).
 Proof. intros.
@@ -191,6 +191,56 @@ Proof. intros.
           split.
           + now rewrite p.
           + now rewrite q.
+Defined.
+
+Example UniT: Typoid Type.
+Proof. unshelve econstructor.
+       - unshelve econstructor.
+         + exact (fun A B: Type => Id A B).
+         + intros. cbn. apply refl.
+         + simpl. intros. apply @concat with (b := y); easy.
+         + simpl. intros. induction X. apply refl.
+       - intros A B. simpl.
+         intros p q.
+         exact (Id p q).
+       - simpl. intros X Y p. apply refl.
+       - simpl. intros X Y p q H. induction H. apply refl.
+       - simpl. intros X Y p q r Ha Hb.
+         induction Ha; induction Hb. apply refl.
+       - simpl. intros X Y p. induction p. simpl. apply refl.
+       - simpl. intros X Y p. induction p. simpl. apply refl.
+       - simpl. intros X Y p. induction p. simpl. apply refl.
+       - simpl. intros X Y p. induction p. simpl. apply refl.
+       - simpl. intros X Y Z T p q r. induction p; induction q; induction r. simpl. apply refl.
+       - simpl. intros X Y Z p q r t Ha Hb. induction Ha; induction Hb. apply refl.
+       - repeat intro. induction X; induction X0. apply refl.
+       - repeat intro. simpl. unfold CMorphisms.Proper. apply refl.
+       - repeat intro. simpl. induction X. simpl. apply refl.
+Defined.
+
+Example UniS: Typoid Set.
+Proof. unshelve econstructor.
+       - unshelve econstructor.
+         + exact (fun A B: Set => Id A B).
+         + intros. cbn. apply refl.
+         + simpl. intros. apply @concat with (b := y); easy.
+         + simpl. intros. induction X. apply refl.
+       - intros A B. simpl.
+         intros p q.
+         exact (Id p q).
+       - simpl. intros X Y p. apply refl.
+       - simpl. intros X Y p q H. induction H. apply refl.
+       - simpl. intros X Y p q r Ha Hb.
+         induction Ha; induction Hb. apply refl.
+       - simpl. intros X Y p. induction p. simpl. apply refl.
+       - simpl. intros X Y p. induction p. simpl. apply refl.
+       - simpl. intros X Y p. induction p. simpl. apply refl.
+       - simpl. intros X Y p. induction p. simpl. apply refl.
+       - simpl. intros X Y Z T p q r. induction p; induction q; induction r. simpl. apply refl.
+       - simpl. intros X Y Z p q r t Ha Hb. induction Ha; induction Hb. apply refl.
+       - repeat intro. induction X; induction X0. apply refl.
+       - repeat intro. simpl. unfold CMorphisms.Proper. apply refl.
+       - repeat intro. simpl. induction X. simpl. apply refl.
 Defined.
 
 Example Uni: Typoid Type.

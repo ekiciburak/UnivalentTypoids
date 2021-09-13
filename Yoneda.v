@@ -1,7 +1,7 @@
 From UT Require Import Prelims Setoid Typoid TypoidFunction TypoidNT ExponentialTypoid.
 Require Import Coq.Classes.CRelationClasses.
 Require Import FunctionalExtensionality.
-
+Set Universe Polymorphism.
 
 
 (*
@@ -206,6 +206,414 @@ Axiom UAT: UA_defT.
 Definition UA_defTT: Type := ∏ (A: Type) (x y: A) (T: Typoid A) (f g: x ~> y), isequiv (@idtoeqvTT A x y T f g).
 Axiom UATT: UA_defTT.
 
+(*
+Definition PresheafTypoidT {A: Type} (TA : Typoid A) := 
+  ExponentialTypoid (OppositeT TA) UniT.
+
+Definition YonedaTypoidT {A: Type} (TA : Typoid A): 
+  TypoidFunction TA (PresheafTypoidT TA).
+Proof. unshelve econstructor.
+       - intro X.
+         unshelve econstructor.
+         + intro Z. simpl in *.
+           exact (Id Z X).
+         + simpl. 
+           intros Y Z f.
+           
+           apply UATT.
+           exists (fun p: Y ~> X => f o p).
+           apply qinv_ishae.
+           unshelve econstructor.
+           ++ exact (fun p => inv f o p).
+           ++ split.
+              * red. intro g.
+                unfold compose, id.
+                apply UATT.
+                rewrite <- Typ3, Typ2_i, Typ1_i.
+                reflexivity.
+              * red. intro g.
+                unfold compose, id.
+                apply UATT.
+                rewrite <- Typ3, Typ2_ii, Typ1_i.
+                reflexivity.
+         + simpl. intro Y.
+           red. intro g.
+           unfold id.
+           apply UATT.
+           unfold Setoid.OppositeS_obligation_1.
+           rewrite Typ1_i.
+           reflexivity.
+         + simpl. intros Y Z W f g h.
+           apply UATT.
+           unfold compose, Setoid.OppositeS_obligation_2.
+           rewrite Typ3.
+           reflexivity.
+         + simpl. intros Y Z f g H.
+           red. intro h.
+           apply UATT.
+           rewrite H.
+           reflexivity.
+         + repeat intro. apply UATT in X0.
+           now induction X0.
+       - intros X Y f.
+         unshelve econstructor.
+         + intro Z. simpl.
+           exists (fun p: Z ~> X => p o f).
+           apply qinv_ishae.
+           unshelve econstructor.
+           ++ exact (fun p: Z ~> Y => p o (inv f)).
+           ++ red. unfold homotopy, compose, id.
+              split.
+              * intro g.
+                apply UATT.
+                rewrite Typ3.
+                rewrite Typ2_ii.
+                rewrite Typ1_ii.
+                reflexivity.
+              * intro g.
+                apply UATT.
+                rewrite Typ3, Typ2_i.
+                rewrite Typ1_ii.
+                reflexivity.
+         + intros Z W g.
+           simpl.
+           unfold homotopy, compose, id.
+           intro h.
+           apply UATT.
+           rewrite Typ3.
+           reflexivity.
+         + repeat intro.
+           apply refl.
+       - intro X.
+         simpl.
+         intro Y.
+         unfold homotopy, Setoid.OppositeS_obligation_1.
+         intro f.
+         apply UATT.
+         rewrite Typ1_ii.
+         reflexivity.
+       - intros X Y Z f g.
+         simpl.
+         intros W h.
+         apply UATT.
+         unfold compose.
+         rewrite Typ3.
+         reflexivity.
+       - intros X Y f g H.
+         simpl.
+         intro Z.
+         unfold homotopy.
+         intro h.
+         apply UATT.
+         rewrite H.
+         reflexivity.
+       - repeat intro.
+         simpl in a0.
+         apply UATT.
+         rewrite X.
+         reflexivity.
+Defined. *)
+
+
+Definition Ya {A: Type} (a: A) (TA: Typoid A): TypoidFunction TA Uni.
+Proof. unshelve econstructor.
+       - intro x.
+         exact (et (@st A TA) x a).
+       - simpl. intros x y f.
+         unshelve econstructor.
+         + intro g.
+           exact (inv f o g).
+         + apply qinv_ishae.
+           unshelve econstructor.
+           ++ intros g.
+              exact (f o g).
+           ++ unfold homotopy, compose.
+              split.
+              * intros g.
+                apply UATT.
+                rewrite <- Typ3.
+                rewrite Typ2_ii.
+                rewrite Typ1_i.
+                unfold id.
+                reflexivity.
+              * intros g.
+                apply UATT.
+                rewrite <- Typ3.
+                rewrite Typ2_i.
+                rewrite Typ1_i.
+                unfold id.
+                reflexivity.
+       - simpl. unfold homotopy, id.
+         intros x f.
+         apply UATT.
+         rewrite Typ9.
+         reflexivity.
+       - simpl. intros x y z f g.
+         unfold homotopy, id, compose.
+         intros h.
+         apply UATT.
+         rewrite Typ5.
+         rewrite Typ3.
+         reflexivity.
+       - simpl. intros x y f g H.
+         unfold homotopy.
+         intro h.
+         apply UATT.
+         rewrite H.
+         reflexivity.
+       - repeat intro.
+         apply UATT.
+         rewrite X.
+         reflexivity.
+Defined.
+
+Definition PiTypoid: forall {A: Type} (TA: Typoid A) (P: TypoidFunction TA Uni), 
+  Typoid (forall x: A, fobj P x).
+Proof. intros A TA P.
+       simpl.
+       unshelve econstructor.
+       - unshelve econstructor.
+         + unfold crelation.
+           intros phi Q.
+(*            exact (forall x: A, (et (@st _ Uni) (phi x) (Q x))). *)
+           exact (forall x: A, (Id (phi x) (Q x))).
+         + simpl. intros p x.
+           apply refl.
+         + simpl. intros p q r Ha Hb x.
+           specialize (@concat _ (p x) (q x) (r x) (Ha x) (Hb x)); intro C.
+           exact C.
+         + simpl. intros p q H x.
+           exact (inverse (H x)).
+       - simpl. intros p q.
+         unfold crelation.
+         intros Hp Hq.
+         exact (forall x: A, Id (Hp x) (Hq x)).
+       - simpl. intros p q H x.
+         apply refl.
+       - simpl. intros p q Hp Hq H x.
+         exact (inverse (H x)).
+       - simpl. intros p q Hp Hq Hr Ha Hb x.
+         specialize (@concat _ (Hp x) (Hq x) (Hr x) (Ha x) (Hb x)); 
+         intro C.
+         exact C.
+       - simpl. intros p q Hp x.
+         induction (Hp x).
+         simpl.
+         apply refl.
+       - simpl. intros p q Hp x.
+         induction (Hp x).
+         simpl.
+         apply refl.
+       - simpl. intros p q Hp x.
+         induction (Hp x).
+         simpl.
+         apply refl.
+       - simpl. intros p q Hp x.
+         induction (Hp x).
+         simpl.
+         apply refl.
+       - simpl. intros p q r s Hp Hq Hs x.
+         simpl in *.
+         specialize (@concat_assoc _ (p x) (q x) (r x) (s x)
+                                  (Hp x) (Hq x) (Hs x)); intros C.
+         exact (inverse C).
+       - simpl. intros p q r Hp Hq Hr Hs Ht Hi x.
+         induction (Ht x).
+         induction (Hi x).
+         apply refl.
+       - repeat intro.
+         simpl in *.
+         induction (X x2).
+         induction (X0 x2).
+         apply refl.
+       - repeat intro.
+         apply refl.
+       - repeat intro.
+         simpl in *.
+         induction (X x1).
+         apply refl.
+Defined.
+
+Definition PiTypoidA: forall {A: Type} (a: A) (TA: Typoid A) (P: TypoidFunction TA Uni), 
+  Typoid (fobj P a).
+Proof. intros A a TA P.
+       simpl.
+       unshelve econstructor.
+       - unshelve econstructor.
+         + unfold crelation.
+           intros phi Q.
+(*            exact (forall x: A, (et (@st _ Uni) (phi x) (Q x))). *)
+           exact (Id phi Q).
+         + simpl. intros px.
+           apply refl.
+         + simpl. intros p q r Ha Hb.
+           specialize (@concat _ p q r Ha Hb); intro C.
+           exact C.
+         + simpl. intros p q H.
+           exact (inverse H).
+       - simpl. intros p q.
+         unfold crelation.
+         intros Hp Hq.
+         exact (Id Hp Hq).
+       - simpl. intros p q H.
+         apply refl.
+       - simpl. intros p q Hp Hq H.
+         exact (inverse H).
+       - simpl. intros p q Hp Hq Hr Ha Hb.
+         specialize (@concat _ Hp Hq Hr Ha Hb); 
+         intro C.
+         exact C.
+       - simpl. intros p q Hp.
+         induction (Hp).
+         simpl.
+         apply refl.
+       - simpl. intros p q Hp.
+         induction (Hp).
+         simpl.
+         apply refl.
+       - simpl. intros p q Hp.
+         induction (Hp).
+         simpl.
+         apply refl.
+       - simpl. intros p q Hp.
+         induction (Hp).
+         simpl.
+         apply refl.
+       - simpl. intros p q r s Hp Hq Hs.
+         simpl in *.
+         specialize (@concat_assoc _ p q r s
+                                  Hp Hq Hs ); intros C.
+         exact (inverse C).
+       - simpl. intros p q r Hp Hq Hr Hs Ht Hi.
+         induction (Ht).
+         induction (Hi).
+         apply refl.
+       - repeat intro.
+         simpl in *.
+         induction (X).
+         induction (X0).
+         apply refl.
+       - repeat intro.
+         apply refl.
+       - repeat intro.
+         simpl in *.
+         induction (X).
+         apply refl.
+Defined.
+
+Definition PQNT: forall {A: Type} (TA: Typoid A) (P Q: TypoidFunction TA Uni),
+  Typoid (forall x: A, fobj P x -> fobj Q x).
+Proof. intros A TA P Q.
+       unshelve econstructor.
+       - unshelve econstructor.
+         + unfold crelation.
+           intros phi psi.
+           exact (forall x: A, (Id (phi x) (psi x))).
+         + simpl. intros p q.
+           apply refl. 
+         + simpl. intros p q r Hp Hq x.
+           specialize (@concat _ (p x) (q x) (r x) (Hp x) (Hq x)); intro C.
+           exact C.
+         + simpl. intros p q Hp x.
+           exact (inverse (Hp x)).
+       - simpl. intros p q.
+         unfold crelation.
+         intros Hp Hq.
+         exact (forall x: A, Id (Hp x) (Hq x)).
+       - simpl. intros p q H x.
+         apply refl.
+       - simpl. intros p q Hp Hq H x.
+         exact (inverse (H x)).
+       - simpl. intros p q Hp Hq Hr Ha Hb x.
+         specialize (@concat _ (Hp x) (Hq x) (Hr x) (Ha x) (Hb x)); 
+         intro C.
+         exact C.
+       - simpl. intros p q Hp x.
+         induction (Hp x).
+         simpl.
+         apply refl.
+       - simpl. intros p q Hp x.
+         induction (Hp x).
+         simpl.
+         apply refl.
+       - simpl. intros p q Hp x.
+         induction (Hp x).
+         simpl.
+         apply refl.
+       - simpl. intros p q Hp x.
+         induction (Hp x).
+         simpl.
+         apply refl.
+       - simpl. intros p q r s Hp Hq Hs x.
+         simpl in *.
+         specialize (@concat_assoc _ (p x) (q x) (r x) (s x)
+                                  (Hp x) (Hq x) (Hs x)); intros C.
+         exact (inverse C).
+       - simpl. intros p q r Hp Hq Hr Hs Ht Hi x.
+         induction (Ht x).
+         induction (Hi x).
+         apply refl.
+       - repeat intro.
+         simpl in *.
+         induction (X x2).
+         induction (X0 x2).
+         apply refl.
+       - repeat intro.
+         apply refl.
+       - repeat intro.
+         simpl in *.
+         induction (X x1).
+         apply refl.
+Defined.
+
+Definition YaPNTr: forall {A: Type} (a: A) (TA: Typoid A) (P: TypoidFunction TA Uni),
+  TypoidFunction (PiTypoidA a TA P) (PQNT TA (Ya a TA) P).
+Proof. intros A a TA P.
+       unshelve econstructor.
+       - simpl. intros fp x f.
+         destruct P.
+         destruct (fmap a x (inv f)) as (g, geq).
+         exact (g fp).
+       - simpl. intros px py q x.
+         induction q.
+         apply refl.
+       - simpl. intros px x.
+         apply refl.
+       - simpl. intros px py pz p q x.
+         induction p.
+         induction q.
+         apply refl.
+       - simpl. intros px py p q r x.
+         induction p.
+         induction r.
+         apply refl.
+       - repeat intro.
+         simpl in X.
+         induction X.
+         apply refl.
+Defined.
+
+Definition YaPNTl: forall {A: Type} (a: A) (TA: Typoid A) (P: TypoidFunction TA Uni),
+  TypoidFunction (PQNT TA (Ya a TA) P) (PiTypoidA a TA P).
+Proof. intros A a TA P.
+       unshelve econstructor.
+       - intro v.
+         exact (v a (eqv a)).
+       - simpl. intros p q Hp.
+(*          assert (pp: Id p q).
+         { apply funext. easy. } *)
+         specialize (Hp a).
+         induction Hp.
+         apply refl.
+       - simpl. intros p.
+         apply refl.
+       - simpl. intros p q r Hp Hq.
+         unfold Id_rect.
+Admitted.
+
+(* Lemma YaPNTEq: forall {A: Type} (a: A) (TA: Typoid A) (P: TypoidFunction TA Uni),
+  Id (TFCompose (YaPNTl a TA P) (YaPNTr a TA P)) (IdTF (PQNT TA (Ya a TA) P) ). *)
+
 Definition PresheafTypoid {A: Type} (TA : Typoid A) := 
   ExponentialTypoid (OppositeT TA) Uni.
 
@@ -287,7 +695,7 @@ Proof. unshelve econstructor.
          unfold homotopy, Setoid.OppositeS_obligation_1.
          intro f.
          apply UATT.
-         rewrite Typ1_i, Typ1_ii.
+         rewrite Typ1_ii.
          reflexivity.
        - intros X Y Z f g.
          simpl.
@@ -311,12 +719,45 @@ Proof. unshelve econstructor.
          reflexivity.
 Defined.
 
+Class UnivalentTypoid (A: Type): Type :=
+   mkUnivalentTypoid
+   {
+      TT         :  Typoid A;
+      Ua         :  ∏ {x y: A} (e: x ~> y), Id x y;
+      Ua2        :  ∏ {x y: A} {e d: x ~> y} (i: e == d), Id (Ua e) (Ua d);
+      UT_ob1     :  ∏ {x y: A} (p: Id x y), Id (Ua (@idtoeqvT A x y TT p)) p;
+      UT_ob2     :  ∏ {x y: A} (e: x ~> y), @idtoeqvT A x y TT (Ua e) == e;
+   }.
+
 Lemma YonedaEmbedding {A: Type} (TA: Typoid A) (X: A) (F: TypoidFunction (OppositeT TA) Uni):
   Equiv (et (@st _ (PresheafTypoid TA)) (fobj (YonedaTypoid TA) X) F)
         (fobj F X).
-Proof.
-
-
+Proof. unfold Equiv.
+       unshelve econstructor.
+       - intros (phi, cc1, cc2).
+         destruct (phi X) as (phiX, R).
+         exact (phiX (eqv X)).
+       - apply h249_i.
+         unshelve econstructor.
+         + intros fx.
+           unshelve econstructor.
+           simpl.
+           ++ intros Y.
+              unshelve econstructor.
+              +++ simpl. intro f.
+                  destruct (fmap F f) as (fmapf, R).
+                  exact (fmapf fx).
+              +++ apply qinv_ishae.
+                  destruct F.
+                  simpl in fx, fmap.
+                  simpl.
+                  unshelve econstructor.
+                  * intros fy.
+                    clear fmap_pid fmap_pcomp fmap_p TP.
+                    specialize (fmap  X Y).
+                    simpl in fmap.
+                    admit.
+                  * unshelve econstructor.
 Admitted.
 
 
@@ -417,7 +858,7 @@ Definition YonedaEmbeddingA {A: Type} (TA: Typoid A):
 
 Definition YonedaL {A: Type} (TA: Typoid A):
   TypoidFunction (ProductTypoid (OppositeT TA) (ExponentialTypoid (OppositeT TA) (TypoidUni))) (TypoidUni) :=
-  TypoidFunction.ComposeTF (ProductTypoidFunction (OppositeTF (YonedaEmbeddingA TA)) (IdTF (ExponentialTypoid (OppositeT TA) (TypoidUni))))
+  ComposeTF (ProductTypoidFunction (OppositeTF (YonedaEmbeddingA TA)) (IdTF (ExponentialTypoid (OppositeT TA) (TypoidUni))))
             (@CurHomT _ (ExponentialTypoid (OppositeT TA) (TypoidUni))).
 
 Definition YonedaR {A: Type} (TA: Typoid A): 
@@ -425,20 +866,32 @@ Definition YonedaR {A: Type} (TA: Typoid A):
   ComposeTF (Twist _ _ ) (EvalF (OppositeT TA) TypoidUni).
 
 Definition YonedaLR {A: Type} (TA: Typoid A): TypoidNT (YonedaL TA) (YonedaR TA).
+Proof. unshelve econstructor.
+       - intros (X, F).
+         unshelve econstructor.
+         + intros (f, ob1, ob2).
+           simpl.
+           simpl in f.
+           clear ob1 ob2.
+           specialize (f X ).
+           destruct f as (fx, R).
+           exact (fx (eqv X)).
+         + unshelve econstructor.
+           ++ intros f.
+              simpl in f.
+              unshelve econstructor.
+              * simpl. intro Y.
+                destruct F.
+                simpl in f.
+                simpl.
+                destruct TA, st.
+                simpl.
 Admitted.
 
 Definition YonedaRL {A: Type} (TA: Typoid A): TypoidNT (YonedaR TA) (YonedaL TA).
 Admitted.
 
-Class UnivalentTypoid (A: Type): Type :=
-   mkUnivalentTypoid
-   {
-      TT         :  Typoid A;
-      Ua         :  ∏ {x y: A} (e: x ~> y), Id x y;
-      Ua2        :  ∏ {x y: A} {e d: x ~> y} (i: e == d), Id (Ua e) (Ua d);
-      UT_ob1     :  ∏ {x y: A} (p: Id x y), Id (Ua (@idtoeqvT A x y TT p)) p;
-      UT_ob2     :  ∏ {x y: A} (e: x ~> y), @idtoeqvT A x y TT (Ua e) == e;
-   }.
+
 
 (* Definition TypeUni: UnivalentTypoid Type.
 Proof. unshelve econstructor.

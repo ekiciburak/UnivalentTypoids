@@ -12,12 +12,22 @@ Class TypoidNT {A B: Type} {TA: Typoid A} {TB: Typoid B}
      TRP     :> ∏ {x: A}, CMorphisms.Proper (@ett B TB (fobj F x) (fobj G x)) (trans x)
   }.
 
-Arguments trans {_ _ _ _ _ _  } _ _ .
+Arguments trans {_ _ _ _ _ _  } _ _ . 
 
+Definition IdNT: forall {A B: Type} {TA: Typoid A} {TB: Typoid B} 
+  (F : TypoidFunction TA TB), TypoidNT F F.
+Proof. intros A B TA TB (fobj, fmap, cc1, cc2, cc3, cc4).
+       unshelve econstructor.
+       - simpl. intro X. exact (eqv (fobj X)).
+       - simpl. intros X Y f. rewrite Typ1_i, Typ1_ii.
+         reflexivity.
+       - repeat intro. simpl.
+         unfold CMorphisms.Proper.
+         easy.
+Defined.
 
 Definition ComposeNT
                       (A B: Type)
-                      (f g h: A -> B)
                       (TA: Typoid A) 
                       (TB: Typoid B)
                       (F  : TypoidFunction TA TB)

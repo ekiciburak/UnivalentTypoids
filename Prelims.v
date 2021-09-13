@@ -150,6 +150,13 @@ Lemma r_concat_refl: ∏ {A: Type} (a b: A) (p: Id a b),
   Id (concat p (refl b)) p.
 Proof. intros. now induction p. Defined.
 
+(* Lemma concat_assoc: ∏ {A: Type} {a b c d: A} (p: Id a b) (q: Id b c) (r: Id c d),
+  Id (concat p (concat q r)) (concat (concat p q) r).
+Proof. intros.
+       induction p; induction q; induction r.
+       simpl.
+       apply refl.
+Qed. *)
 
 Lemma l_concat_remove: ∏ {A: Type} {a b c: A} (p: Id a b) (q r: Id b c),
   Id (concat p q) (concat p r) -> Id q r.

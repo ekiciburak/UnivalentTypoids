@@ -9,28 +9,10 @@ Proof. unshelve econstructor.
        - unshelve econstructor.
          + intros F G.
            exact (TypoidNT F G).
-         + intro f. cbn in *.
-           destruct f as (f, phif, fid, fcomp, fp, fR).
-           unshelve econstructor.
-           ++ intro x.
-              exact (phif x x (eqv x)).
-           ++ cbn. intros.
-              now rewrite <- !fcomp, Typ1_i, Typ1_ii.
-           ++ repeat intro. cbn. unfold CMorphisms.Proper.
-              easy.
+         + intro f. 
+           exact (IdNT f).
          + cbn. intros f g h F G.
-           destruct f as (f, phif, fid, fcomp, fp, fR).
-           destruct g as (g, phig, gid, gcomp, gp, gR).
-           destruct h as (h, phih, hid, hcomp, hp, hR).
-           destruct F as (t1, nt1, FP).
-           destruct G as (t2, nt2, GP).
-           unshelve econstructor.
-           ++ intro x.
-               exact (t1 x o t2 x).
-           ++ cbn. intros.
-              now rewrite Typ3, <- nt2, <- Typ3, nt1, Typ3.
-           ++ repeat intro. cbn. unfold CMorphisms.Proper.
-              easy.
+           exact (ComposeNT A B TA TB f g h F G).
          + cbn. intros f g F.
            specialize (fmap_pinv f); intros finv.
            destruct f as (f, fmapf, fid, fcomp, fp, fR).
@@ -67,19 +49,19 @@ Proof. unshelve econstructor.
        - intros F G e.
          intro a.
          destruct F, G, e. cbn.
-         now rewrite fmap_pid, Typ1_i.
+         now rewrite Typ1_i.
        - intros F G e.
          intro a.
          destruct F, G, e. cbn.
-         now rewrite fmap_pid0, Typ1_ii.
+         now rewrite Typ1_ii.
        - intros F G e.
          intro a.
          destruct F, G, e. cbn.
-         now rewrite fmap_pid, Typ2_i.
+         now rewrite Typ2_i.
        - intros F G e.
          intro a.
          destruct F, G, e. cbn.
-         now rewrite fmap_pid0, Typ2_ii.
+         now rewrite Typ2_ii.
        - intros F G H I e1 e2 e3.
          intro a.
          destruct F, G, H, I, e1, e2, e3. cbn.
@@ -146,7 +128,7 @@ Proof. unshelve econstructor.
         - intro c. exact (FixBiF1 c F).
         - intros a b h. 
           exact (FixBiNT1 F a b h).
-        - easy.
+        - simpl. intros. rewrite fmap_pid. easy.
         - cbn. intros.
           rewrite <- fmap_pcomp.
           destruct F. cbn in *.
