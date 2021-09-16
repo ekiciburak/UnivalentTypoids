@@ -78,7 +78,7 @@ Definition ap {A B: Type} {a b: A} (f: A -> B): Id a b -> Id (f a) (f b).
 Proof. intro p. now induction p. Defined.
 
 Definition concat {A: Type} {a b c: A}: Id a b -> Id b c -> Id a c.
-Proof. intros p q. now induction p; induction q. Defined.
+Proof. intros p q. now induction p. Defined.
 
 Definition homotopy {A: Type} {P: A -> Type} (f g: (∏ a: A, P a)): Type :=
   ∏ a: A, Id (f a) (g a).

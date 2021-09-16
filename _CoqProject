@@ -5,5 +5,6 @@ TypoidFunction.v
 TypoidNT.v
 ExponentialTypoid.v
 Yoneda.v
+UnivalentTypoid.v
 
 -Q . UT

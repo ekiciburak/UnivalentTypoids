@@ -145,6 +145,21 @@ Proof. unshelve econstructor.
           + now rewrite q.
 Defined.
 
+(* Example TypoidTypoids (A: Type): Typoid (Typoid A).
+Proof. unshelve econstructor.
+       - unshelve econstructor.
+         + unfold crelation.
+           intros F G.
+           exact (TypoidFunction F G).
+         + intros TA. simpl.
+           exact (IdTF TA).
+         + simpl. intros T1 T2 T3 F G.
+           exact (ComposeTF F G).
+         + simpl. intros T1 T2 F.
+           destruct F.
+           unshelve econstructor.
+           ++ exact id.
+           ++  *)
 
 Definition FixBiF1 {A B C: Type} 
                     {TA: Typoid A}
