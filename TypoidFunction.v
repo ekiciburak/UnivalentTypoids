@@ -6,6 +6,18 @@ Require Import FunctionalExtensionality.
 Class TypoidFunction {A B: Type} (X: Typoid A) (Y: Typoid B): Type :=
    mkTypoidFunction 
    {
+      fobj       :  A -> B;
+      fmap       :  ∏ (x y: A), (@et A (@st A X) x y) -> (@et B (@st B Y)  (fobj x) (fobj y));
+      fmap_pid   :  ∏ (x: A), @ett B Y _ _ (fmap x x (eqv x)) (eqv (fobj x));
+      fmap_pcomp :  ∏ (x y z: A) (e1: @et A (@st A X)  x y) (e2: @et A (@st A X)  y z), @ett B Y _ _ (fmap x z (@star A (@st A X)  _ _ _ e1 e2)) 
+                                                                                       (@star B (@st B Y)  _ _ _ (fmap x y e1) (fmap y z e2));
+      fmap_p     :  ∏ (x y: A) (e d: @et A (@st A X)  x y) (i: @ett A X x y e d), (@ett B Y _ _ (fmap x y e) (fmap x y d));
+       TP        :> ∏ {x y}, CMorphisms.Proper (@CMorphisms.respectful _ _ (@ett A X  x y) (@ett B Y (fobj x) (fobj y))) (fmap x y); 
+   }.
+   
+(* Class TypoidFunction {A B: Type} (X: Typoid A) (Y: Typoid B): Type :=
+   mkTypoidFunction 
+   {
       fobj      :  A -> B;
       fmap      :  ∏ {x y: A}, x ~> y -> (fobj x ~> fobj y);
       fmap_pid  :  ∏ (x: A), fmap (eqv x) == eqv (fobj x);
@@ -13,8 +25,9 @@ Class TypoidFunction {A B: Type} (X: Typoid A) (Y: Typoid B): Type :=
       fmap_p    :  ∏ {x y: A} (e d: x ~> y) (i: e == d), fmap e == fmap d;
       TP        :> ∏ {x y}, CMorphisms.Proper (@CMorphisms.respectful _ _ (@ett A X x y) (@ett B Y (fobj x) (fobj y))) (@fmap x y); 
    }.
-
-(* Notation "x '~~>' y"  := (TypoidFunction x y) : type_scope.*)
+ *)
+ 
+Notation "x '~~>' y"  := (TypoidFunction x y) : type_scope.
 Arguments fobj {_ _ _ _} _ _ . 
 Arguments fmap {_ _ _ _ } _ {_ _}  _ .
 Arguments fmap_p {_ _} _ {_ _ _ _}  _ .
@@ -31,7 +44,7 @@ Proof. unshelve econstructor.
        + destruct F, G. cbn in *. intros. unfold compose.
          now rewrite fmap_pcomp0, fmap_pcomp1.
        + destruct F, G. cbn in *. intros. unfold compose.
-         now rewrite (fmap_p0 x y e d i).
+         now rewrite i.
        + destruct F, G. repeat intro. now rewrite X.
 Defined.
 
@@ -78,11 +91,12 @@ Proof. unshelve econstructor.
        - exact (fun a => (fobj g (fobj f a))).
        - intros x y e. unfold compose.
          exact (fmap g (fmap f e)).
-       - cbn. intros. unfold compose.
-         now do 2 rewrite <- fmap_pid.
        - cbn. intros.
+         now do 2 rewrite fmap_pid.
+       - cbn. intros. 
          now do 2 rewrite fmap_pcomp.
-       - cbn. intros. now rewrite i.
+       - cbn. intros. unfold compose.
+         now rewrite i.
        - repeat intro. now rewrite X.
 Defined.
 

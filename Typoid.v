@@ -78,6 +78,76 @@ Defined.
 
 Reserved Notation "x '~~>' y" (at level 70, y at next level).
 
+Definition e3 A: Typoid A.
+Proof. unshelve econstructor.
+        - unshelve econstructor.
+          + exact (fun x y: A => Id x y).
+          + exact (fun x => refl x).
+          + exact (fun (x y z: A) (p: Id x y) (q: Id y z) => concat p q).
+          + exact (fun (x y: A) (p: Id x y) => inverse p).
+        - exact (fun (x y: A) (e d: Id x y) => Id e d).
+        - intros. now cbn.
+        - cbn. intros. exact (inverse X).
+        - cbn. intros. now induction X, X0.
+        - cbn. intros. now induction e.
+        - intros. now destruct e.
+        - intros. cbn. now destruct e.
+        - intros. cbn. now destruct e.
+        - intros. cbn. now destruct e1, e2, e3.
+        - intros. cbn in *. now induction X, X0.
+        - repeat intros x y z p1 p2 r q1 q2 s. cbn in *.
+           now induction r, s.
+        - repeat intro.
+          simpl.
+          unfold CMorphisms.Proper.
+          apply refl.
+        - repeat intro.
+          induction X.
+          apply refl.
+(*         - repeat intro. now cbn.
+        - repeat intro. cbn. now induction X. *)
+Defined.
+
+
+Definition e4 (A B: Type): Typoid (A -> B).
+Proof. unshelve econstructor.
+       - unshelve econstructor.
+         + exact (fun (f g: A -> B) => ∏x: A, Id (f x) (g x)). 
+         + exact (fun (f: A -> B) (x: A) => refl (f x)).
+         + cbn. exact (fun (f g h: A -> B) (e1: ∏ x : A, Id (f x) (g x)) (d: ∏ x : A, Id (g x) (h x)) (x: A) => concat (e1 x) (d x)).
+         + exact (fun (f g: A -> B) (e1: ∏ x : A, Id (f x) (g x)) (x: A) => inverse (e1 x)).
+       - exact (fun (f g: A -> B) (e1 e2: ∏ x : A, Id (f x) (g x)) => ∏x: A, Id (e1 x) (e2 x)).
+       - cbn. intros. easy.
+       - cbn. intros.
+         exact (inverse (X x0)).
+       - cbn. intros.
+         exact (concat (X x0) (X0 x0)).
+       - cbn. intros.
+         now destruct (e x0).
+       - cbn. intros.
+         now destruct (e x0).
+       - cbn. intros.
+         now destruct (e x0).
+       - cbn. intros.
+         now destruct (e x0).
+       - cbn. intros.
+         apply inverse, concat_assoc.
+       - cbn. intros.
+         now induction (X x0), (X0 x0).
+       - repeat intro. cbn in *. now induction (X x2), (X0 x2).
+        - repeat intro.
+          simpl.
+          unfold CMorphisms.Proper.
+          apply refl.
+        - repeat intro.
+          unfold inv.
+          induction (X x1).
+          apply refl.
+(*        - repeat intro. now cbn.
+       - repeat intro. cbn. now induction (X x1). *)
+Defined.
+
+
 Definition OppositeT {A: Type} (T: Typoid A): Typoid A.
 Proof. unshelve econstructor.
         - exact (OppositeS (@st A T)).
@@ -315,7 +385,7 @@ Proof. unshelve econstructor.
          unfold homotopy, compose, id in *.
          intro x0.
          now specialize (pr3 x0).
-       - cbn. intros.
+       - cbn. intros x y z t e1 e2 e3.
          destruct e1, e2, e3, (h249_ii (ishae_isequiv pr1 pr2)), pr7,
          (h249_ii (ishae_isequiv pr0 pr3)).
          destruct pr10. cbn.
@@ -439,7 +509,8 @@ Proof. unshelve econstructor.
         - intros. destruct e. easy.
         - intros. destruct e, pr2, pr2, pr3. easy.
         - intros. destruct e, pr2, pr2, pr3. easy.
-        - intros. destruct e1. destruct e2. destruct e3.
+        - intros x y z t e1 e2 e3. 
+          destruct e1. destruct e2. destruct e3.
           easy.
         - intros.
           destruct e1 as (pr3, pr4). 
